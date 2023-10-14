@@ -1,0 +1,617 @@
+;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
+
+;; Place your private configuration here! Remember, you do not need to run 'doom
+;; sync' after modifying this file!
+
+
+;; Some functionality uses this to identify you, e.g. GPG configuration, email
+;; clients, file templates and snippets. It is optional.
+(setq user-full-name "Christopher Poile"
+      user-mail-address "cpoile@gmail.com")
+
+;; Doom exposes five (optional) variables for controlling fonts in Doom:
+;;
+;; - `doom-font' -- the primary font to use
+;; - `doom-variable-pitch-font' -- a non-monospace font (where applicable)
+;; - `doom-big-font' -- used for `doom-big-font-mode'; use this for
+;;   presentations or streaming.
+;; - `doom-unicode-font' -- for unicode glyphs
+;; - `doom-serif-font' -- for the `fixed-pitch-serif' face
+;;
+;; See 'C-h v doom-font' for documentation and more examples of what they
+;; accept. For example:
+;;
+;;(setq doom-font (font-spec :family "Meslo LG S" :size 12 :weight 'normal)
+;;     doom-variable-pitch-font (font-spec :family "Fira Sans" :size 13))
+;;(setq doom-font (font-spec :family "Meslo LG S" :size 12 :weight 'normal))
+(setq doom-font (font-spec :family "JetBrains Mono" :size 13 :weight 'Light))
+(setq line-spacing 0)
+;;
+;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
+;; up, `M-x eval-region' to execute elisp code, and 'M-x doom/reload-font' to
+;; refresh your font settings. If Emacs still can't find your font, it likely
+;; wasn't installed correctly. Font issues are rarely Doom issues!
+
+;; There are two ways to load a theme. Both assume the theme is installed and
+;; available. You can either set `doom-theme' or manually load a theme with the
+;; `load-theme' function. This is the default:
+(setq doom-theme 'doom-zenburn)
+
+;; This determines the style of line numbers in effect. If set to `nil', line
+;; numbers are disabled. For relative line numbers, set this to `relative'.
+(setq display-line-numbers-type t)
+
+;; If you use `org' and don't want your org files in the default location below,
+;; change `org-directory'. It must be set before org loads!
+(setq org-directory "~/org/")
+
+
+;; Whenever you reconfigure a package, make sure to wrap your config in an
+;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
+;;
+;;   (after! PACKAGE
+;;     (setq x y))
+;;
+;; The exceptions to this rule:
+;;
+;;   - Setting file/directory variables (like `org-directory')
+;;   - Setting variables which explicitly tell you to set them before their
+;;     package is loaded (see 'C-h v VARIABLE' to look up their documentation).
+;;   - Setting doom variables (which start with 'doom-' or '+').
+;;
+;; Here are some additional functions/macros that will help you configure Doom.
+;;
+;; - `load!' for loading external *.el files relative to this one
+;; - `use-package!' for configuring packages
+;; - `after!' for running code after a package has loaded
+;; - `add-load-path!' for adding directories to the `load-path', relative to
+;;   this file. Emacs searches the `load-path' when you load packages with
+;;   `require' or `use-package'.
+;; - `map!' for binding new keys
+;;
+;; To get information about any of these functions/macros, move the cursor over
+;; the highlighted symbol at press 'K' (non-evil users must press 'C-c c k').
+;; This will open documentation for it, including demos of how they are used.
+;; Alternatively, use `C-h o' to look up a symbol (functions, variables, faces,
+;; etc).
+;;
+;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
+;; they are implemented.
+
+(setq!
+        mac-command-modifier 'meta
+        mac-option-modifier  'super
+        scroll-margin        10
+        backup-by-copying t      ; don't clobber symlinks
+        delete-old-versions t
+        kept-new-versions 50
+        version-control t       ; use versioned backups
+        vc-make-backup-files t
+        auto-save-interval 20
+        auto-save-timeout 5)
+
+;; backup dirrectory is common for all files:
+(setq backup-directory-alist
+      `((".*" . "~/to-sync/.backups")))
+;; create the backups dir if necessary, since emacs won't.
+(make-directory "~/to-sync/.backups/" t)
+
+;; but keep the autosave directory local to the file so that it can
+;; recover from crashes:
+;; create the autosave dir if necessary, since emacs won't.
+(make-directory "~/to-sync/.autosaves/" t)
+(setq auto-save-file-name-transforms
+      `((".*" "~/to-sync/.autosaves/\\2" t)))
+
+;; always backup.
+(defun force-backup-of-buffer ()
+  (setq buffer-backed-up nil))
+
+(add-hook 'before-save-hook  'force-backup-of-buffer)
+
+;; autosave code block edit buffers
+(setq org-edit-src-auto-save-idle-delay 0)  ;; don't use this
+(setq org-edit-src-turn-on-auto-save t)     ;; use this
+;; and now change the auto-save name so it saves with the rest of the auto-save files:
+(defadvice org-edit-src-code (after rename-org-src-buffer activate)
+  (if org-src-mode
+      (progn
+        (setq buffer-file-name
+              (concat default-directory buffer-auto-save-file-name))
+        (setq buffer-auto-save-file-name (make-auto-save-file-name)))))
+
+(use-package backup-walker)
+
+;;
+;; Odin setup
+;;
+(load! "odin-mode.el")
+
+(with-eval-after-load 'lsp-mode
+  (add-to-list 'lsp-language-id-configuration
+               '(odin-mode . "odin"))
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-stdio-connection "~/dev/odin/ols/ols")
+                    :major-modes '(odin-mode)
+                    :server-id 'ols
+                    :multi-root t))) ;; This is just so lsp-mode sends the "workspaceFolders" param to the server.
+(add-hook 'odin-mode-hook #'lsp)
+(after! compile
+  (add-to-list 'compilation-error-regexp-alist-alist '(odin "^\\([A-Za-z0-9\\._/-]+\\)(\\([0-9]+\\):\\([0-9]+\\))" 1 2 3))
+  (add-to-list 'compilation-error-regexp-alist 'odin))
+
+(add-hook 'odin-mode-hook (lambda ()
+                            (setq comment-start "//"
+                                  comment-end   "")))
+
+;; Should be in an after! macro, but we're definitely loading it above, so:
+(defun odin-previous-defun ()
+  "Go to previous proc."
+  (interactive)
+  (beginning-of-line)
+  (re-search-backward odin--defun-rx)
+  (beginning-of-line))
+
+(defun odin-next-defun ()
+  "Go to next proc."
+  (interactive)
+  (forward-line)
+  (re-search-forward odin--defun-rx)
+  (beginning-of-line))
+
+(map! :map odin-mode-map
+      "C-M-e" #'odin-next-defun
+      "C-M-a" #'odin-previous-defun
+      "C-M-l" #'lsp-format-buffer)
+
+
+;;
+;; Misc settings
+;;
+(back-button-mode 1)
+(setq doom-modeline-persp-name t)
+(setq doom-modeline-display-default-persp-name t)
+(setq! mark-even-if-inactive nil)
+(whole-line-or-region-global-mode)
+(setq! magit-diff-refine-hunk 'all)
+
+
+(map! :map rust-mode-map
+      "C-q" #'lsp-ui-doc-glance
+      "C-M-l" #'lsp-format-buffer)
+(setq! lsp-ui-doc-max-height 40)
+(setq! lsp-ui-doc-max-width 120)
+(set-popup-rules!
+  '(("^\\*cargo-run" :size 0.4 :slot -1 :ttl t)))
+
+(after! rust-mode
+  (modify-syntax-entry ?_ "w" rust-mode-syntax-table))
+
+(setq! lsp-idle-delay 1.500)
+(setq! lsp-rust-analyzer-server-display-inlay-hints t)
+(setq! lsp-rust-analyzer-display-chaining-hints t)
+(setq! lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
+(setq! lsp-rust-analyzer-display-closure-return-type-hints t)
+(setq! lsp-rust-analyzer-display-parameter-hints nil)
+(setq! lsp-rust-analyzer-display-reborrow-hints nil)
+
+;; TODO: make it so that using C-u shows all buffers (except that's used... so, something else)
+(map! "C-x C-b" #'(lambda (arg)
+                    (interactive "P")
+                    (with-persp-buffer-list () (ibuffer arg))))
+
+;;
+;; Customize zenburn
+;;
+
+(set-face-attribute 'region nil :background "#5F5F5F")
+(set-face-attribute 'default nil :foreground "#D6D6C6" :background "#303030")
+(after! vertico
+  (set-face-attribute 'vertico-current nil :background "#494949"))
+
+;;
+;; Mode customizations
+;;
+;;(add-hook 'magit-mode-hook #'magit-delta-mode)
+
+;;
+;; Custom functions
+;;
+(defun isearch-with-region ()
+  "Use region as the isearch text."
+  (when mark-active
+    (let ((region (funcall region-extract-function nil)))
+      (deactivate-mark)
+      (isearch-push-state)
+      (isearch-yank-string region))))
+(add-hook 'isearch-mode-hook #'isearch-with-region)
+
+;;
+;; Borrowed from crux -- consider loading it, if it doesn't clobber keybindings
+;; Fixed: if we are regioning onto a new line (point is current-column 0),
+;; then back up -- we probably don't intend to duplicate that final line
+(defun crux-get-positions-of-line-or-region ()
+  "Return positions (beg . end) of the current line or region."
+  (let (beg end)
+    (if (and mark-active (> (point) (mark)))
+        (exchange-point-and-mark))
+    (setq beg (line-beginning-position))
+    (if mark-active
+        (exchange-point-and-mark))
+    (if (= (current-column) 0)
+        (backward-char))
+    (setq end (line-end-position))
+    (cons beg end)))
+
+;; This fixes the duplicate lines bug, should be fixed eventually:
+;; https://github.com/bbatsov/crux/pull/96
+(defun crux-duplicate-current-line-or-region (arg)
+  "Duplicates the current line or region ARG times.
+If there's no region, the current line will be duplicated.  However, if
+there's a region, all lines that region covers will be duplicated."
+  (interactive "p")
+  (pcase-let* ((origin (point))
+               (`(,beg . ,end) (crux-get-positions-of-line-or-region))
+               (region (buffer-substring-no-properties beg end)))
+    (dotimes (_i arg)
+      (goto-char end)
+      (newline)
+      (insert region)
+      (setq end (point)))
+    (goto-char (+ origin (* (length region) arg) arg))))
+
+(defun crux-top-join-line ()
+  "Join the current line with the line beneath it."
+  (interactive)
+  (delete-indentation 1))
+
+;;
+;; Customize for writing, and org-mode
+;;
+
+;; I   use single spaces between paragraphs, so I will have to put up with
+;; "forward-sentence" picking up abbreviations and titles as sentence endings.
+(setq sentence-end-double-space nil)
+
+;; ;; I tried but didn't like the following:
+;; don't leave two or more whitespaces after killing a word
+;; (defadvice kill-word (after kill-word-and-spaces (arg) activate compile)
+;;   "Kill the word, and the spaces around it."
+;;   (interactive "p")
+;;    (if (eq (char-after) ? ) (just-one-space)))
+;;(ad-unadvise 'kill-word)
+
+(global-visual-line-mode t)
+
+;; this is bound in the keybindings section later.
+(defun cp/backward-kill-visual-line ()
+  (interactive)
+  (if (boundp visual-line-mode)
+      (kill-visual-line 0)
+    (kill-line 0))
+  (indent-according-to-mode))
+
+;;
+;; Org-mode
+;;
+
+(setq org-startup-folded 'content)
+(setq org-use-speed-commands t)
+
+;; Move up and down org-trees with C-M-n and C-M-p
+(defun cp/org-next-visible-any-item-or-heading ()
+  "Move to the beginning of the next item child, item uncle, or heading, if it is visible."
+  (interactive)
+  (let ((item (org-in-item-p)))
+    (cond
+     ((not item)
+      (or (cp/goto-next-subtree-item) (outline-next-visible-heading 1)))
+     ;; we are at an item.
+     ;; see if we have children to move down.
+     (t (let* ((struct (org-list-struct))
+               (child (org-list-has-child-p item struct)))
+          (cond
+           (child (goto-char child))
+           (t (cp/org-next-visible-item-skip-children))))))))
+
+(defun cp/get-visible-list-in-context-area (&optional direction)
+  "Returns position of list item, or nil if there is no visible list in context area.
+If direction is 'whole or nil, use the whole context. Search downwards from point if direction is 'next, search up from point if direction is 'prev"
+  (interactive)
+  ;; if we're going up, if we are on an outline heading, use context
+  ;; of previous heading.
+  (fset 'search-fn (if (eq direction 'prev) 're-search-backward 're-search-forward))
+  (let* ((context (if (eq direction 'prev) (cp/get-prev-context) (org-list-context)))
+         (contxbeg (car context))
+         (contxend (car (cdr context)))
+         (lim-end (if (eq direction 'prev) contxbeg contxend)))
+    (save-excursion
+      (let* ((listpos (search-fn (org-item-beginning-re) lim-end t))
+             (listposbeg (beginning-of-line)))
+        ;; if we found nothing, listpos is nil here.
+        (and listpos (cp/item-visible listposbeg))))))
+
+(defun cp/goto-next-subtree-item (&optional arg)
+  "arg 'next: search downwards
+arg 'prev: search above"
+  ;; we are not in an item right now. check if our subtree
+  ;; context has more items.
+  (let ((nextitem (cp/get-visible-list-in-context-area (or arg 'next))))
+    (if nextitem (goto-char nextitem) nil)))
+
+(defun cp/goto-prev-subtree-item ()
+  (cp/goto-next-subtree-item 'prev))
+
+(defun cp/org-prev-visible-any-item-or-heading ()
+  "Move to the beginning of the prev item child, item uncle, or heading, if it is visible."
+  (interactive)
+  (or (cp/goto-prev-subtree-item) (outline-previous-visible-heading 1)))
+
+(defun cp/org-next-visible-item-skip-children ()
+  "Assumes we are in an item. Go to next item, or if none go back to parent and try again without
+going through children."
+  (interactive)
+  (let*
+      ((struct (org-list-struct))
+       (item (org-in-item-p))
+       (prevs (org-list-prevs-alist struct))
+       (next-item (org-list-get-next-item item struct prevs)))
+    (if next-item (goto-char next-item)
+      (let*
+          ((parents (org-list-parents-alist struct))
+           (prev-parent (org-list-get-parent item struct parents)))
+        (if prev-parent
+            (progn
+              (goto-char prev-parent)
+              (cp/org-next-visible-item-skip-children))
+          ;; no parent
+          (outline-next-visible-heading 1))))))
+
+(defun cp/get-prev-context ()
+  (interactive)
+  (save-excursion
+    (outline-previous-visible-heading 1)
+    (org-list-context)))
+
+
+(defun cp/item-visible (&optional pos)
+  "returns point if it's visible, or nil if invisible"
+  (if (outline-invisible-p (or pos (point)))
+      nil
+    (or pos (point))))
+
+;; the next functions help us when we are in a list. C-M-u in a list
+;; would have brought us up to the /parent/ of the current
+;; org-heading, when what you probably want is to go up to the current
+;; heading (the parent of the list you are currently in). That would
+;; be org-prev-visible-heading.
+(defun cp/org-up-immediate-heading ()
+  "If in a list, go to the previous org-heading. If not in a list, go to the parent
+   heading as usual."
+  ;; if in an item,
+  ;; or go to previous heading is an item,
+  ;; up heading should actually be org-prev-heading
+  (interactive)
+  (if (outline-on-heading-p)
+      ;; if we're on a heading already, just move up.
+      (outline-up-heading 1 t)
+    (let ((prev-item (cp/get-visible-list-in-context-area 'prev)))
+      (if prev-item
+          (outline-previous-heading)
+        (outline-up-heading 1 t)))))
+
+;; Add the TODO keyword to org-mode's font keywords
+(defun cp/set-inline-todo-keyword ()
+  (add-to-list 'org-font-lock-extra-keywords
+               '("<TODO:[^>]+>" . 'org-todo) t))
+
+(add-hook 'org-font-lock-set-keywords-hook 'cp/set-inline-todo-keyword)
+
+;; Misc fixes
+
+
+;; turn off smartparens mode in orgmode (revisit if I ever start doing literate programming)
+;; don't use the insert-tab indent mode that text-mode uses (it seems to override org, so I guess it runs too?)
+;; move to the start of an org header, not the start of the line
+(after! org
+  (add-hook 'org-mode-hook #'turn-off-smartparens-mode)
+  (add-hook 'org-mode-hook (lambda ()
+                             (setq indent-line-function 'indent-relative)
+                             (setq org-insert-heading-respect-content nil)
+                             (setq org-M-RET-may-split-line t)
+                             (setq org-special-ctrl-a/e t))))
+
+;; turn of company mode by default. If you want to turn it on in some modes,
+;; see: https://emacs.stackexchange.com/questions/48871/how-to-enable-company-mode-for-some-buffers-only
+(global-company-mode -1)
+
+;; and make txt files use paragraph indents as the paragraph breaks.
+;; TODO: this changes for everyone -- need to fix
+(add-hook 'text-mode-hook (lambda ()
+                       (setq-local paragraph-start "[ 	\n\f]\\|\f\\|[ 	]*$")
+                       (setq-local indent-line-function 'insert-tab)))
+
+(defun cp/backward-paragraph (&optional arg)
+  "Move backwards by paragraph, but in text-mode normally this would
+ send you to the start of the current paragraph. I want to go to the
+ start of the previous one."
+  (interactive "^p")
+  (or arg (setq arg 3))
+  (forward-char)
+  (forward-paragraph (- arg 3)))
+
+
+(map! :map text-mode-map "C-M-p" #'cp/backward-paragraph)
+(map! :map text-mode-map "M-p" #'cp/backward-paragraph)
+
+;;
+;; Keybindings
+;;
+(map! "C-M-n" #'forward-paragraph)
+(map! "C-M-p" #'backward-paragraph)
+(map! "M-n" #'forward-paragraph)
+(map! "M-p" #'backward-paragraph)
+(map! :after smartparens
+      :map smartparens-mode-map
+      "C-M-n" nil
+      "C-M-p" nil
+      "C-M-a" nil
+      "C-M-e" nil
+      "C-M-u" #'sp-backward-up-sexp)
+
+;; (define-key prog-mode-map (kbd "M-/") 'company-capf)
+;; (map! "M-<left>" #'back-button-global-backward)
+;; (map! "M-<right>" #'back-button-global-forward)
+(map! "C-M-[" #'back-button-global-backward)
+(map! "C-M-]" #'back-button-global-forward)
+(map! "M-{" #'back-button-local-backward)
+(map! "M-}" #'back-button-local-forward)
+(map! "C-M-{" #'back-button-local-backward)
+(map! "C-M-}" #'back-button-local-forward)
+
+;; because those conflict in org-mode, backup
+(map! "C-c d" #'crux-duplicate-current-line-or-region)
+(map! "C-M-j" #'crux-top-join-line)
+
+;; TODO: convert the following to map! macros?
+;;
+;; backward kill sentence
+(global-set-key (kbd "M-K") 'backward-kill-sentence)
+;; backward kill line (but only the visual line)
+(global-set-key (kbd "C-S-k") 'cp/backward-kill-visual-line)
+(global-set-key (kbd "C-k") 'kill-visual-line)
+
+(after! org
+  (map! :map org-mode-map "C-M-n" #'cp/org-next-visible-any-item-or-heading)
+  (map! :map org-mode-map "C-M-p" #'cp/org-prev-visible-any-item-or-heading)
+  (map! :map org-mode-map "C-M-u" #'outline-up-heading)
+  (map! :map org-mode-map "C-M-u" #'outline-up-heading)
+  (map! :map org-mode-map "C-M-f" #'org-forward-heading-same-level)
+  (map! :map org-mode-map "C-M-b" #'org-backward-heading-same-level)
+  (map! :map org-mode-map "C-M-u" #'cp/org-up-immediate-heading)
+  (map! :map org-mode-map "M-}" #'back-button-local-forward)
+  (map! :map org-mode-map "M-{" #'back-button-local-backward)
+
+  ;; (map! :map org-mode-map "M-n" #'cp/org-next-visible-any-item-or-heading)
+  ;; (map! :map org-mode-map "M-p" #'cp/org-prev-visible-any-item-or-heading)
+  (org-remap org-mode-map 'backward-paragraph 'backward-paragraph)
+  (org-remap org-mode-map 'forward-paragraph 'forward-paragraph)
+  (map! :map org-mode-map "M-n" #'forward-paragraph)
+  (map! :map org-mode-map "M-p" #'backward-paragraph)
+
+  ;; these were conflicting with global and local back-button
+  ;; (map! :map org-mode-map "M-]" #'org-metaright)
+  ;; (map! :map org-mode-map "M-[" #'org-metaleft)
+  (map! :map org-mode-map "C-e" #'end-of-visual-line))
+
+;;
+;; Multiple cursors
+;;
+(use-package! multiple-cursors
+  :ensure   t
+  :bind (("C-M-SPC" . set-rectangular-region-anchor)
+         ("C-M->" . mc/mark-next-like-this)
+         ("C-M-<" . mc/mark-previous-like-this)
+         ("C-c C-." . mc/mark-all-like-this)
+         ("C-c C-SPC" . mc/edit-lines)))
+
+;; (use-package! multiple-cursors
+;;   :ensure t
+;;   :config
+;;   (lambda ()
+;;     (defvar mc/mark-next-like-this)
+;;     (defvar mc/mark-previous-like-this)
+;;     (defvar mc/mark-all-like-this)
+;;     (map! "C-M->" 'mc/mark-next-like-this)
+;;     (map! "C-M-<" 'mc/mark-previous-like-this)
+;;     (map! "C-c C-," 'mc/mark-all-like-this)))
+
+;;
+;; Org-novelist
+;;
+(load! "org-novelist.el")
+(after! org-novelist
+  (setq org-novelist-language-tag "en-GB")  ; The interface language for Org Novelist to use. It defaults to 'en-GB' when not set
+  (setq org-novelist-author "C.R. Poile")  ; The default author name to use when exporting a story. Each story can also override this setting
+  (setq org-novelist-author-email "cpoile@gmail.com")  ; The default author contact email to use when exporting a story. Each story can also override this setting
+  (setq org-novelist-automatic-referencing-p nil))
+
+
+;;
+;; So pdflatex can be found
+;;
+(defun set-exec-path-from-shell-PATH ()
+  "Sets the exec-path to the same value used by the user shell"
+  (let ((path-from-shell
+         (replace-regexp-in-string
+          "[[:space:]\n]*$" ""
+          (shell-command-to-string "$SHELL -l -c 'echo $PATH'"))))
+    (setenv "PATH" path-from-shell)
+    (setq exec-path (split-string path-from-shell path-separator))))
+;; call function now
+
+(set-exec-path-from-shell-PATH)
+
+
+;; Clippety
+(use-package! clipetty
+  ;; if you omit :defer, :hook, :commands, or :after, then the package is loaded
+  ;; immediately. By using :hook here, the `hl-todo` package won't be loaded
+  ;; until prog-mode-hook is triggered (by activating a major mode derived from
+  ;; it, e.g. python-mode)
+  :ensure t
+  :bind ("M-w" . clipetty-kill-ring-save)
+  :config
+  ;; code here will run after the package is loaded
+  (setq clipetty-assume-nested-mux t))
+
+;; Start almost full screen on mac
+(if (string-equal system-type "darwin")
+    (progn
+      (setq frame-inhibit-implied-resize t)  ;; prevent resize window on startup
+      (set-frame-height (window-frame) 65)
+      (set-frame-width (window-frame) 220)))
+
+;;
+;; xterm crap
+;;
+;; xterm with the resource ?.VT100.modifyOtherKeys: 1
+;; GNU Emacs >=24.4 sets xterm in this mode and define
+;; some of the escape sequences but not all of them.
+(defun character-apply-modifiers (c &rest modifiers)
+  "Apply modifiers to the character C.
+MODIFIERS must be a list of symbols amongst (meta control shift).
+Return an event vector."
+  (if (memq 'control modifiers) (setq c (if (or (and (<= ?@ c) (<= c ?_))
+                                                (and (<= ?a c) (<= c ?z)))
+                                            (logand c ?\x1f)
+                                          (logior (lsh 1 26) c))))
+  (if (memq 'meta modifiers) (setq c (logior (lsh 1 27) c)))
+  (if (memq 'shift modifiers) (setq c (logior (lsh 1 25) c)))
+  (vector c))
+
+(defun my-eval-after-load-xterm ()
+  (when (and (boundp 'xterm-extra-capabilities) (boundp 'xterm-function-map))
+    (let ((c 32))
+      (while (<= c 126)
+        (mapc (lambda (x)
+                (define-key xterm-function-map (format (car x) c)
+                  (apply 'character-apply-modifiers c (cdr x))))
+              '(;; with ?.VT100.formatOtherKeys: 0
+                ("\e\[27;3;%d~" meta)
+                ("\e\[27;5;%d~" control)
+                ("\e\[27;6;%d~" control shift)
+                ("\e\[27;7;%d~" control meta)
+                ("\e\[27;8;%d~" control meta shift)
+                ;; with ?.VT100.formatOtherKeys: 1
+                ("\e\[%d;3u" meta)
+                ("\e\[%d;5u" control)
+                ("\e\[%d;6u" control shift)
+                ("\e\[%d;7u" control meta)
+                ("\e\[%d;8u" control meta shift)))
+        (setq c (1+ c))))))
+
+(eval-after-load "xterm" '(my-eval-after-load-xterm))
+
+;; to fix tmux (until this is fixed: https://github.com/tmux/tmux/issues/3721)
+(map! "C-*" 'undo-redo)
