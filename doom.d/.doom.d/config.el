@@ -122,6 +122,10 @@
 
 (use-package backup-walker)
 
+;; are we in a terminal?
+;; (unless (display-graphic-p)
+;;   (getenv-internal "TERM" initial-environment))
+
 ;;
 ;; Odin setup
 ;;
@@ -175,25 +179,51 @@
 (whole-line-or-region-global-mode)
 (setq! magit-diff-refine-hunk 'all)
 
+;; Add to a programming language map as needed (see rust below)
+;; Not added because it doesn't seem to work in terminal mode
+(defun cp/lsp-doc-window-or-focus ()
+  "Bring up the lsp doc window, or focus the lsp doc window"
+  (interactive)
+  (if (lsp-ui-doc--visible-p)
+      (lsp-ui-doc-focus-frame)
+    (lsp-ui-doc-show)))
+
+;;
+;; Rust mode
+;;
 
 (map! :map rust-mode-map
+      ;"C-q" #'cp/lsp-doc-window-or-focus
       "C-q" #'lsp-ui-doc-glance
       "C-M-l" #'lsp-format-buffer)
 (setq! lsp-ui-doc-max-height 40)
 (setq! lsp-ui-doc-max-width 120)
 (set-popup-rules!
   '(("^\\*cargo-run" :size 0.4 :slot -1 :ttl t)))
+(setq! lsp-ui-doc-enable nil)
 
 (after! rust-mode
   (modify-syntax-entry ?_ "w" rust-mode-syntax-table))
 
-(setq! lsp-idle-delay 1.500)
+(setq! lsp-idle-delay 0.2)
 (setq! lsp-rust-analyzer-server-display-inlay-hints t)
 (setq! lsp-rust-analyzer-display-chaining-hints t)
 (setq! lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
 (setq! lsp-rust-analyzer-display-closure-return-type-hints t)
 (setq! lsp-rust-analyzer-display-parameter-hints nil)
 (setq! lsp-rust-analyzer-display-reborrow-hints nil)
+(setq! lsp-eldoc-render-all nil)
+(setq! eldoc-idle-delay 0.2)
+(setq! lsp-signature-auto-activate)
+
+;;
+;; C-mode
+;;
+(map! :map c-mode-map
+      "C-q" #'+lookup/documentation
+      "C-M-l" #'lsp-format-buffer
+      "C-c C-c" #'compile
+      "C-c C-r" #'recompile)
 
 ;; TODO: make it so that using C-u shows all buffers (except that's used... so, something else)
 (map! "C-x C-b" #'(lambda (arg)
@@ -208,6 +238,8 @@
 (set-face-attribute 'default nil :foreground "#D6D6C6" :background "#303030")
 (after! vertico
   (set-face-attribute 'vertico-current nil :background "#494949"))
+(after! lsp-mode
+  (set-face-attribute 'lsp-face-highlight-textual nil :foreground "#D6D6C6" :background "#464C43"))
 
 ;;
 ;; Mode customizations
@@ -615,3 +647,57 @@ Return an event vector."
 
 ;; to fix tmux (until this is fixed: https://github.com/tmux/tmux/issues/3721)
 (map! "C-*" 'undo-redo)
+;; I've set S-backspace to send Esc+[7;5- because I keep pressing it by accident
+;; See: https://www.vinc17.net/unix/ctrl-backspace.en.html
+(define-key global-map "\C-[[7;5~" 'backward-delete-char)
+
+;;
+;; Tree-sitter
+;;
+;; Should use:
+ ;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
+ ;; at least once per installation or while changing this list
+ (setq treesit-language-source-alist
+  '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+     (cmake "https://github.com/uyha/tree-sitter-cmake")
+     (css "https://github.com/tree-sitter/tree-sitter-css")
+     (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+     (go "https://github.com/tree-sitter/tree-sitter-go")
+     (html "https://github.com/tree-sitter/tree-sitter-html")
+     (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+     (json "https://github.com/tree-sitter/tree-sitter-json")
+     (make "https://github.com/alemuller/tree-sitter-make")
+     (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+     (python "https://github.com/tree-sitter/tree-sitter-python")
+     (toml "https://github.com/tree-sitter/tree-sitter-toml")
+     (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+     (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+     (yaml "https://github.com/ikatyang/tree-sitter-yaml")
+     (c "https://github.com/tree-sitter/tree-sitter-c")
+     (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+     (rust "https://github.com/tree-sitter/tree-sitter-rust")))
+
+ ;; (major-mode-remap-alist
+ ;;  '((elixir-mode . elixir-ts-mode)))
+
+(add-to-list 'treesit-load-name-override-list '(c "libtree-sitter-c" "tree_sitter_c"))
+(add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
+(add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
+(add-to-list 'major-mode-remap-alist '(c-or-c++-mode . c-or-c++-ts-mode))
+
+;; ;; When you want to change a major mode -> its ts mode, do this:
+;; (add-to-list 'major-mode '(rustic-mode . rust-ts-mode))
+
+;; ;; When you want to keep your mode hooks:
+;; (defun rust-ts-mode-call-hook () (run-hooks 'rust-mode-hook))
+;; (add-hook 'rust-ts-mode-hook #'rust-ts-mode-call-hook)
+
+(defun c-ts-mode-call-hook () (run-hooks 'c-mode-hook))
+(add-hook 'c-ts-mode-hook #'c-ts-mode-call-hook)
+
+;; is it enabled?
+(defun treesit-enabled-p ()
+  "Checks if the current buffer has a treesit parser."
+  (and (fboundp 'treesit-available-p)
+       (treesit-available-p)
+       (treesit-language-at (point))))
