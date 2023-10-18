@@ -259,16 +259,25 @@ if [[ $OSTYPE == darwin* ]]; then
 fi
 
 ##
+## UBUNTU
+##
+
+if [[ $OSTYPE == linux* ]]; then
+  export TERM=xterm-24bit
+fi
+
+
+##
 ## Settings for both mac and linux
 ##
+
+export PATH="$HOME/.emacs.d/bin:$PATH"
 
 # so that ctrl-d doesn't close terminal
 set -o ignoreeof
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
-
 autoload -U compinit; compinit
 
 test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
