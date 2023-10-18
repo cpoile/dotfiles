@@ -238,7 +238,7 @@
     (setq beg (line-beginning-position))
     (if mark-active
         (exchange-point-and-mark))
-    (if (= (current-column) 0)
+    (if (and (= (current-column) 0) (> (point) (mark)))
         (backward-char))
     (setq end (line-end-position))
     (cons beg end)))
@@ -615,3 +615,12 @@ Return an event vector."
 
 ;; to fix tmux (until this is fixed: https://github.com/tmux/tmux/issues/3721)
 (map! "C-*" 'undo-redo)
+
+;; to set up treesitter:
+;; git clone --depth=1 https://github.com/tree-sitter/tree-sitter.git
+;;   make
+;;
+;; (instead of using the list command above)
+;; git clone --depth=1 https://github.com/casouri/tree-sitter-module
+;;   ./batch.sh
+;;   mv dist/* /usr/local/lib
