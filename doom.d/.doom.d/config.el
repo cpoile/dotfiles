@@ -197,10 +197,10 @@
       "C-q" #'lsp-ui-doc-glance
       "C-M-l" #'lsp-format-buffer)
 (setq! lsp-ui-doc-max-height 40)
-(setq! lsp-ui-doc-max-width 120)
+(setq! lsp-ui-doc-max-width 150)
 (set-popup-rules!
   '(("^\\*cargo-run" :size 0.4 :slot -1 :ttl t)))
-(setq! lsp-ui-doc-enable nil)
+;;(setq! lsp-ui-doc-enable nil)
 
 (after! rust-mode
   (modify-syntax-entry ?_ "w" rust-mode-syntax-table))
@@ -215,6 +215,100 @@
 (setq! lsp-eldoc-render-all nil)
 (setq! eldoc-idle-delay 0.2)
 (setq! lsp-signature-auto-activate)
+
+;;;
+;;; lsp-mode with Tramp doesn't seem to work:
+;;;
+;; ;; (defun start-file-process-shell-command@around (start-file-process-shell-command name buffer &rest args)
+;; ;;   "Start a program in a subprocess.  Return the process object for it.
+;; ;; Similar to `start-process-shell-command', but calls `start-file-process'."
+;; ;;   ;; On remote hosts, the local `shell-file-name' might be useless.
+;; ;;   (let ((command (mapconcat 'identity args " ")))
+;; ;;     (funcall start-file-process-shell-command name buffer command)))
+;;
+;; ;; (advice-add 'start-file-process-shell-command :around #'start-file-process-shell-command@around)
+;;
+;; (with-eval-after-load "lsp-rust"
+;;  (lsp-register-client
+;;   (make-lsp-client
+;;    :new-connection (lsp-stdio-connection
+;;                     (lambda ()
+;;                       `(,(or (executable-find
+;;                               (cl-first lsp-rust-analyzer-server-command))
+;;                              (lsp-package-path 'rust-analyzer)
+;;                              "rust-analyzer")
+;;                         ,@(cl-rest lsp-rust-analyzer-server-args))))
+;;    :remote? t
+;;    :major-modes '(rust-mode rustic-mode)
+;;    :initialization-options 'lsp-rust-analyzer--make-init-options
+;;    :notification-handlers (ht<-alist lsp-rust-notification-handlers)
+;;    :action-handlers (ht ("rust-analyzer.runSingle" #'lsp-rust--analyzer-run-single))
+;;    :library-folders-fn (lambda (_workspace) lsp-rust-library-directories)
+;;    :after-open-fn (lambda ()
+;;                     (when lsp-rust-analyzer-server-display-inlay-hints
+;;                       (lsp-rust-analyzer-inlay-hints-mode)))
+;;    :ignore-messages nil
+;;    :server-id 'rust-analyzer-remote)))
+
+;; Also doesn't work:
+;;
+;; (defun rustic-lsp-conn-command ()
+;;   (cons
+;;    (executable-find "rust-analyzer" t)
+;;    (cl-rest lsp-rust-analyzer-server-args)))
+;;
+;; (with-eval-after-load "lsp-rust"
+;;   (defun start-file-process-shell-command@around (start-file-process-shell-command name buffer &rest args)
+;;     "Start a program in a subprocess.  Return the process object
+;; for it. Similar to `start-process-shell-command', but calls
+;; `start-file-process'."
+;;     ;; On remote hosts, the local `shell-file-name' might be useless.
+;;     (let ((command (mapconcat 'identity args " ")))
+;;       (funcall start-file-process-shell-command name buffer command)))
+;;
+;;   (advice-add 'start-file-process-shell-command
+;;               :around #'start-file-process-shell-command@around)
+;;
+;;  (lsp-register-client
+;;   (make-lsp-client
+;;    :new-connection (lsp-tramp-connection #'rustic-lsp-conn-command)
+;;    :remote? t
+;;    :major-modes '(rust-mode rustic-mode)
+;;    :initialization-options 'lsp-rust-analyzer--make-init-options
+;;    :notification-handlers (ht<-alist lsp-rust-notification-handlers)
+;;    :action-handlers (ht ("rust-analyzer.runSingle" #'lsp-rust--analyzer-run-single))
+;;    :library-folders-fn (lambda (_workspace) lsp-rust-library-directories)
+;;    :after-open-fn (lambda ()
+;;                     (when lsp-rust-analyzer-server-display-inlay-hints
+;;                       (lsp-rust-analyzer-inlay-hints-mode)))
+;;    :ignore-messages nil
+;;    :server-id 'rust-analyzer-remote)))
+;;
+;;
+;; (defun expand-file-name-remote (file)
+;;   "A tramp-friendly version of expand-file-name.  Expand file
+;; relative to the remote part of default-directory."
+;;   (let ((file (expand-file-name file))
+;;         (dir-remote (file-remote-p default-directory)))
+;;     (if (file-remote-p file)
+;;         ;; if file is already remote, return it
+;;         file
+;;       ;; otherwise prepend the remote part (if any) of default-directory
+;;       (concat dir-remote file))))
+;;
+;; (defun around-ad-executable-find (orig-fn cmd &optional is-remote)
+;;   (let ((remote-cmd (if is-remote (expand-file-name-remote cmd) cmd)))
+;;     (if (file-executable-p remote-cmd)
+;;         cmd
+;;       (funcall orig-fn cmd is-remote))))
+;; (advice-add 'executable-find :around 'around-ad-executable-find)
+;;
+;; (require 'lsp-rust)
+;;
+;; (require 'tramp)
+;; (after! tramp
+;;   (setq tramp-verbose 10)
+;;   (add-to-list 'tramp-remote-path 'tramp-own-remote-path))
 
 ;;
 ;; C-mode
@@ -657,25 +751,25 @@ Return an event vector."
 ;; Should use:
  ;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
  ;; at least once per installation or while changing this list
- (setq treesit-language-source-alist
-  '((bash "https://github.com/tree-sitter/tree-sitter-bash")
-     (cmake "https://github.com/uyha/tree-sitter-cmake")
-     (css "https://github.com/tree-sitter/tree-sitter-css")
-     (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-     (go "https://github.com/tree-sitter/tree-sitter-go")
-     (html "https://github.com/tree-sitter/tree-sitter-html")
-     (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
-     (json "https://github.com/tree-sitter/tree-sitter-json")
-     (make "https://github.com/alemuller/tree-sitter-make")
-     (markdown "https://github.com/ikatyang/tree-sitter-markdown")
-     (python "https://github.com/tree-sitter/tree-sitter-python")
-     (toml "https://github.com/tree-sitter/tree-sitter-toml")
-     (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
-     (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
-     (yaml "https://github.com/ikatyang/tree-sitter-yaml")
-     (c "https://github.com/tree-sitter/tree-sitter-c")
-     (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
-     (rust "https://github.com/tree-sitter/tree-sitter-rust")))
+ ;; (setq treesit-language-source-alist
+ ;;  '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+ ;;     (cmake "https://github.com/uyha/tree-sitter-cmake")
+ ;;     (css "https://github.com/tree-sitter/tree-sitter-css")
+ ;;     (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+ ;;     (go "https://github.com/tree-sitter/tree-sitter-go")
+ ;;     (html "https://github.com/tree-sitter/tree-sitter-html")
+ ;;     (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+ ;;     (json "https://github.com/tree-sitter/tree-sitter-json")
+ ;;     (make "https://github.com/alemuller/tree-sitter-make")
+ ;;     (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+ ;;     (python "https://github.com/tree-sitter/tree-sitter-python")
+ ;;     (toml "https://github.com/tree-sitter/tree-sitter-toml")
+ ;;     (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+ ;;     (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+ ;;     (yaml "https://github.com/ikatyang/tree-sitter-yaml")
+ ;;     (c "https://github.com/tree-sitter/tree-sitter-c")
+ ;;     (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+ ;;     (rust "https://github.com/tree-sitter/tree-sitter-rust")))
 
  ;; (major-mode-remap-alist
  ;;  '((elixir-mode . elixir-ts-mode)))
@@ -702,7 +796,9 @@ Return an event vector."
        (treesit-available-p)
        (treesit-language-at (point))))
 
-;; to set up treesitter:
+; to set up emacs with treesitter:
+;   https://github.com/d12frosted/homebrew-emacs-plus
+; to set up treesitter:
 ;; git clone --depth=1 https://github.com/tree-sitter/tree-sitter.git
 ;;   make
 ;;
@@ -710,3 +806,5 @@ Return an event vector."
 ;; git clone --depth=1 https://github.com/casouri/tree-sitter-module
 ;;   ./batch.sh
 ;;   mv dist/* /usr/local/lib
+(require 'treesit)
+(treesit-language-available-p 'c)

@@ -6,7 +6,7 @@ delete:
 
 ubuntu:
 	sudo apt-get update
-	sudo apt-get -y install man-db emacs-nox stow zsh ripgrep fd-find markdown shellcheck build-essential gcc g++ clang ninja-build autoconf automake libtool tree exa clangd wget rsync valgrind glibc-source
+	sudo apt-get -y install man-db emacs-nox stow zsh ripgrep fd-find markdown shellcheck build-essential gcc g++ clang ninja-build autoconf automake libtool tree exa clangd wget rsync valgrind glibc-source gh
 	sudo ln -s $(which fdfind) /usr/local/bin/fd
 	sudo mkdir /usr/include/src && sudo tar -xf /usr/src/glibc/glibc-2.38.tar.xz --strip-components=1 -C /usr/include/src
 	wget -qO- "https://github.com/Kitware/CMake/releases/download/v3.26.5/cmake-3.26.5-linux-aarch64.tar.gz" | sudo tar --strip-components=1 -xz -C /usr

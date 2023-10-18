@@ -246,9 +246,9 @@ if [[ $OSTYPE == darwin* ]]; then
 
   [[ -s "/Users/chris/.gvm/scripts/gvm" ]] && source "/Users/chris/.gvm/scripts/gvm"
 
-  alias emacs='open -a /Applications/Emacs.app $1'
-  alias em='open -a /Applications/Emacs.app $1'
-  alias ec='/opt/homebrew/bin/emacsclient -nw'
+  # alias emacs='open -a /Applications/Emacs.app $1'
+  # alias em='open -a /Applications/Emacs.app $1'
+  # alias ec='/opt/homebrew/bin/emacsclient -nw'
   alias ll='ls -lah'
   alias rsync-working-to-cpoile='rsync -aE ~/go/src/github.com/mattermost/mattermost-mobile/node_modules/react-native-incall-manager ~/go/src/github.com/cpoile'
   alias rsync-cpoile-to-working='rsync -aE --delete --exclude={'.git','.idea'} ~/go/src/github.com/cpoile/react-native-incall-manager ~/go/src/github.com/mattermost/mattermost-mobile/node_modules'
