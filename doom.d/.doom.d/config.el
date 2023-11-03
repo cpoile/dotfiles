@@ -24,7 +24,7 @@
 ;;(setq doom-font (font-spec :family "Meslo LG S" :size 12 :weight 'normal)
 ;;     doom-variable-pitch-font (font-spec :family "Fira Sans" :size 13))
 ;;(setq doom-font (font-spec :family "Meslo LG S" :size 12 :weight 'normal))
-(setq doom-font (font-spec :family "JetBrains Mono" :size 13 :weight 'Light))
+(setq doom-font (font-spec :family "JetBrains Mono" :size 12 :weight 'Light))
 (setq line-spacing 0)
 ;;
 ;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
@@ -39,7 +39,7 @@
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
-(setq display-line-numbers-type t)
+(setq display-line-numbers-type 'relative)
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
@@ -774,10 +774,10 @@ Return an event vector."
  ;; (major-mode-remap-alist
  ;;  '((elixir-mode . elixir-ts-mode)))
 
-(add-to-list 'treesit-load-name-override-list '(c "libtree-sitter-c" "tree_sitter_c"))
-(add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
-(add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
-(add-to-list 'major-mode-remap-alist '(c-or-c++-mode . c-or-c++-ts-mode))
+;; (add-to-list 'treesit-load-name-override-list '(c "libtree-sitter-c" "tree_sitter_c"))
+;; (add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
+;; (add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
+;; (add-to-list 'major-mode-remap-alist '(c-or-c++-mode . c-or-c++-ts-mode))
 
 ;; ;; When you want to change a major mode -> its ts mode, do this:
 ;; (add-to-list 'major-mode '(rustic-mode . rust-ts-mode))
@@ -806,5 +806,30 @@ Return an event vector."
 ;; git clone --depth=1 https://github.com/casouri/tree-sitter-module
 ;;   ./batch.sh
 ;;   mv dist/* /usr/local/lib
-(require 'treesit)
-(treesit-language-available-p 'c)
+;;(require 'treesit)
+;;(treesit-language-available-p 'go)
+
+;;
+;; go
+;;
+;; (after! go-mode
+;;   (after! lsp-mode
+;;     (add-hook 'go-mode-hook 'lsp)))
+
+(use-package go-mode
+  :mode ("\\.go\\'" . go-mode)
+  :init
+  ;;(setq compilation-read-command nil)
+  :bind (;; ("M-." . godef-jump)
+         ("C-." . +lookup/references))
+  :hook ((go-mode . lsp-deferred)))
+
+;;
+;; don't need this bc we're just not going to use treesit for now
+;;
+;;(defun go-mode-run-hooks () (run-hooks 'go-mode-hook))
+;;(add-hook 'go-ts-mode-hook #'go-mode-run-hooks)
+
+;;
+(after! go-ts-mode
+  (setq auto-mode-alist (delete '("\\.go\\'" . go-ts-mode) auto-mode-alist)))
