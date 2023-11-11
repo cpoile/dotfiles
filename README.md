@@ -6,7 +6,7 @@ This repo uses [stow][] to manage the symlinks, but you don't **have** to --
 you can also just individually symlink the contents of each directory directly
 into your home.
 
-If this is a new Ubuntu box and you want the full emacs experience: install git, clone this repo into `~/dotfiles` and
+If this is a new Ubuntu box and you want the full ~~emacs~~ neovim experience: install git, clone this repo into `~/git/dotfiles` (or wherever you keep your git repos) and
 
 ``` sh
 make ubuntu-aarch64
@@ -16,12 +16,14 @@ or
 make ubuntu-amd64
 ```
 
-If you want to use stow, clone this repository into `~/dotfiles` and do
+If you want to use stow, clone this repository into `~/git/dotfiles` and do
 
 ```sh
-cd ~/dotfiles
+cd ~/git/dotfiles
 make
 ```
+
+NOTE: Make sure to personalize the `.gitconfig`.
 
 stow will automatically symlink the contents of each "package" into the parent
 directory from where it is invoked (i.e. your home directory), that's why it
