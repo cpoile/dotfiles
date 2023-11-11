@@ -9,7 +9,11 @@ into your home.
 If this is a new Ubuntu box and you want the full emacs experience: install git, clone this repo into `~/dotfiles` and
 
 ``` sh
-make ubuntu
+make ubuntu-aarch64
+```
+or
+``` sh
+make ubuntu-amd64
 ```
 
 If you want to use stow, clone this repository into `~/dotfiles` and do

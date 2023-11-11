@@ -77,7 +77,7 @@ zstyle ':omz:update' mode reminder  # just remind me to update when it's time
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git autojump zsh-autosuggestions zsh-syntax-highlighting)
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -249,13 +249,17 @@ if [[ $OSTYPE == darwin* ]]; then
   # alias emacs='open -a /Applications/Emacs.app $1'
   # alias em='open -a /Applications/Emacs.app $1'
   # alias ec='/opt/homebrew/bin/emacsclient -nw'
-  alias ll='ls -lah'
+  alias ll='exa -lah'
   alias rsync-working-to-cpoile='rsync -aE ~/go/src/github.com/mattermost/mattermost-mobile/node_modules/react-native-incall-manager ~/go/src/github.com/cpoile'
   alias rsync-cpoile-to-working='rsync -aE --delete --exclude={'.git','.idea'} ~/go/src/github.com/cpoile/react-native-incall-manager ~/go/src/github.com/mattermost/mattermost-mobile/node_modules'
 
   export PATH="/opt/homebrew/opt/llvm@14/bin:$HOME/dev/odin/Odin:/Library/TeX/texbin:$PATH"
   alias odin='LDFLAGS="-L/opt/homebrew/opt/llvm@14/lib" CPPFLAGS="-I/opt/homebrew/opt/llvm@14/include" odin'
 
+  ## to fix the doom sync warnings about vertico's grep:
+  if [ -d "$(brew --prefix)/opt/grep/libexec/gnubin" ]; then
+    PATH="$(brew --prefix)/opt/grep/libexec/gnubin:$PATH"
+  fi
 fi
 
 ##
@@ -272,6 +276,13 @@ fi
 ##
 
 export PATH="$HOME/.emacs.d/bin:$PATH"
+export MYVIMRC=~/.config/nvim/init.lua
+export XDG_CONFIG_HOME="$HOME/.config"
+
+##
+## Aliases
+##
+alias lg='lazygit'
 
 # so that ctrl-d doesn't close terminal
 set -o ignoreeof
@@ -282,3 +293,4 @@ autoload -U compinit; compinit
 
 test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 
+eval "$(zoxide init --cmd j zsh)"

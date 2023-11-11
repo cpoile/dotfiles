@@ -1,0 +1,12 @@
+gui:
+  sidePanelWidth: 0.3 # gives you more space to show things side-by-side
+  theme:
+    selectedLineBgColor:
+      - '#3F3F3F'
+    selectedRangeBgColor:
+      - '#3F3F3F'
+git:
+  overrideGpg: true
+  paging:
+    colorArg: always
+      #pager: delta --dark --paging=never

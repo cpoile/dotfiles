@@ -5,7 +5,7 @@
 [core]
 	autocrlf = input
 	excludesfile = ~/.gitignore
-	editor = emacsclient
+	editor = nvim
 	pager = delta
 [interactive]
 	diffFilter = delta --color-only
