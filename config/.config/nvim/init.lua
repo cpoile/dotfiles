@@ -425,7 +425,11 @@ require('lazy').setup({
 
   {
     'neomake/neomake',
-  }
+  },
+
+  {
+    'roxma/vim-tmux-clipboard',
+  },
 }, {})
 
 -- load my personal snippets
