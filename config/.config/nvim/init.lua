@@ -777,6 +777,23 @@ local servers = {
   },
 }
 
+if vim.loop.os_uname().sysname == 'Linux' then
+  servers = {
+    clangd = {},
+    -- gopls = {},
+    -- pyright = {},
+    rust_analyzer = {},
+    -- tsserver = {},
+    -- html = { filetypes = { 'html', 'twig', 'hbs'} },
+
+    lua_ls = {
+      Lua = {
+        workspace = { checkThirdParty = false },
+        telemetry = { enable = false },
+      },
+    },
+  }
+end
 -- Setup neovim lua configuration
 require('neodev').setup({
   library = { plugins = { "nvim-dap-ui" }, types = true },

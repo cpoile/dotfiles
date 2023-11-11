@@ -1,8 +1,8 @@
 lastupdatecheck: 0
 recentrepos:
+- /home/chris/git/dotfiles
 - /Users/chris/git/dotfiles
 startuppopupversion: 5
 customcommandshistory: []
 hidecommandlog: false
 ignorewhitespaceindiffview: false
-diffcontextsize: 3

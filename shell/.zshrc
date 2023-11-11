@@ -249,7 +249,6 @@ if [[ $OSTYPE == darwin* ]]; then
   # alias emacs='open -a /Applications/Emacs.app $1'
   # alias em='open -a /Applications/Emacs.app $1'
   # alias ec='/opt/homebrew/bin/emacsclient -nw'
-  alias ll='exa -lah'
   alias rsync-working-to-cpoile='rsync -aE ~/go/src/github.com/mattermost/mattermost-mobile/node_modules/react-native-incall-manager ~/go/src/github.com/cpoile'
   alias rsync-cpoile-to-working='rsync -aE --delete --exclude={'.git','.idea'} ~/go/src/github.com/cpoile/react-native-incall-manager ~/go/src/github.com/mattermost/mattermost-mobile/node_modules'
 
@@ -278,6 +277,7 @@ fi
 export PATH="$HOME/.emacs.d/bin:$PATH"
 export MYVIMRC=~/.config/nvim/init.lua
 export XDG_CONFIG_HOME="$HOME/.config"
+alias ll='exa -lah'
 
 ##
 ## Aliases
