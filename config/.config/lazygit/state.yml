@@ -1,8 +1,9 @@
 lastupdatecheck: 0
 recentrepos:
-- /home/chris/git/dotfiles
+- /Users/chris/go/src/github.com/mattermost/calls
 - /Users/chris/git/dotfiles
 startuppopupversion: 5
 customcommandshistory: []
 hidecommandlog: false
 ignorewhitespaceindiffview: false
+diffcontextsize: 3

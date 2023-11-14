@@ -277,12 +277,12 @@ fi
 export PATH="$HOME/.emacs.d/bin:$PATH"
 export MYVIMRC=~/.config/nvim/init.lua
 export XDG_CONFIG_HOME="$HOME/.config"
-alias ll='exa -lah'
 
 ##
 ## Aliases
 ##
 alias lg='lazygit'
+alias ll='exa -lah'
 
 # so that ctrl-d doesn't close terminal
 set -o ignoreeof

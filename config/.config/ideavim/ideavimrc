@@ -56,9 +56,10 @@ nmap [d        <Action>(GotoPreviousError)
 map <C-o>      <Action>(Back)
 map <C-i>      <Action>(Forward)
 
-" Increase or decrease font size
-nmap <D-=> <Action>(EditorIncreaseFontSize)
-nmap <D--> <Action>(EditorDecreaseFontSize)
+
+" Increase or decrease font size -- not working, so mapped in the ui
+" nmap <D-+> <Action>(EditorIncreaseFontSize)
+" nmap <D-_> <Action>(EditorDecreaseFontSize)
 
 " not sure how these two work:
 nmap [q <Action>(FindPrevious)
@@ -72,7 +73,8 @@ nmap <D-a> <Action>(MethodUp)
 nmap <C-w>m <Action>(MoveEditorToOppositeTabGroup)
 nmap <C-w>x <Action>(MoveEditorToOppositeTabGroup) \| <Action>(PreviousTab) \| <Action>(MoveEditorToOppositeTabGroup)
 nmap <C-w>c <Action>(OpenEditorInOppositeTabGroup)
-
+nmap <C-w>L <Action>(MoveEditorToOppositeTabGroup)
+nmap <C-w>H <Action>(MoveEditorToOppositeTabGroup)
 
 ""
 "" PLUGINS =====================================================================

@@ -241,6 +241,8 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     dependencies = {
       'nvim-treesitter/nvim-treesitter-textobjects',
+      'nvim-treesitter/nvim-treesitter-refactor',
+      'nvim-treesitter/nvim-treesitter-context',
     },
     build = ':TSUpdate',
   },
@@ -430,6 +432,35 @@ require('lazy').setup({
   {
     'roxma/vim-tmux-clipboard',
   },
+
+  {
+    'tmux-plugins/vim-tmux-focus-events',
+  },
+
+  {
+    'ziglang/zig.vim',
+  },
+
+  {
+    "https://git.sr.ht/~nedia/auto-save.nvim",
+    config = function()
+      require('auto-save').setup({
+        events = {'FocusLost', 'BufLeave' },
+      })
+    end,
+  },
+
+  -- {
+  --   'pocco81/auto-save.nvim',
+  --   config = function()
+  --     require('auto-save').setup {
+  --       trigger_events = {"BufLeave", "FocusLost"},
+  --       execution_message = {
+  --         message = function() return ("AHHHH!!") end
+  --       },
+  --     }
+  --   end
+  -- },
 }, {})
 
 -- load my personal snippets
@@ -454,6 +485,9 @@ vim.wo.number = true
 
 -- minimum numbe of lines while scrolling
 vim.o.scrolloff = 10
+
+-- how much does c-d and c-u jump by
+vim.o.scroll = 20
 
 -- Enable mouse mode
 vim.o.mouse = 'a'
@@ -489,6 +523,10 @@ vim.o.termguicolors = true
 -- set default tabstop, this fixes telescope's tendancy to put a tabstop of 8 in go previews
 vim.o.tabstop = 4
 
+-- split below and to the right
+vim.o.splitbelow = true
+vim.o.splitright = true
+
 -- [[ Basic Keymaps ]]
 
 -- Keymaps for better default experience
@@ -498,6 +536,17 @@ vim.keymap.set({ 'n', 'v' }, '<Space>', '<Nop>', { silent = true })
 -- Remap for dealing with word wrap
 vim.keymap.set('n', 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
 vim.keymap.set('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
+
+
+-- Primeagen's move highlighted text up and down:
+vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
+vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
+
+-- Helix has some greate interactive mode keybindings:
+vim.keymap.set({'i'}, '<C-d>', "<C-o>x")
+vim.keymap.set({'i'}, '<M-d>', "<C-o>dw")
+-- conflicts with signature help from lsp
+-- vim.keymap.set({'i'}, '<C-k>', "<C-o>d$<right>")
 
 -- [[ Highlight on yank ]]
 -- See `:help vim.highlight.on_yank()`
@@ -612,7 +661,7 @@ vim.keymap.set('n', '<leader>ts', '<Cmd>set hlsearch!<cr>', { desc = 'toggle hig
 vim.defer_fn(function()
   require('nvim-treesitter.configs').setup {
     -- Add languages to be installed here that you want installed for treesitter
-    ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'javascript', 'typescript', 'vimdoc', 'vim', 'bash' },
+    ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'javascript', 'typescript', 'vimdoc', 'vim', 'bash', 'zig' },
 
     -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
     auto_install = false,
@@ -648,7 +697,7 @@ vim.defer_fn(function()
         goto_next_start = {
           [']m'] = '@function.outer',
           [']]'] = '@class.outer',
-          [']a'] = '@function.name',
+          ['<M-e>'] = '@function.name',
         },
         goto_next_end = {
           [']M'] = '@function.outer',
@@ -657,7 +706,7 @@ vim.defer_fn(function()
         goto_previous_start = {
           ['[m'] = '@function.outer',
           ['[['] = '@class.outer',
-          ['[a'] = '@function.name',
+          ['<M-a>'] = '@function.name',
         },
         goto_previous_end = {
           ['[M'] = '@function.outer',
@@ -672,6 +721,13 @@ vim.defer_fn(function()
         swap_previous = {
           ['<leader>A'] = '@parameter.inner',
         },
+      },
+    },
+      refactor = {
+      highlight_definitions = {
+        enable = true,
+        -- Set to false if you have an `updatetime` of ~100.
+        clear_on_cursor_move = true,
       },
     },
   }
@@ -695,6 +751,10 @@ vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next diagnos
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Open floating diagnostic message' })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostics list' })
 
+-- Convenience keymaps similiar to IDEA (TODO: reorganize these)
+vim.keymap.set('v', '<Leader>cd', "y'>p", { desc = '[d]uplicate lines or selection' })
+vim.keymap.set('n', '<Leader>cd', "Vyp", { desc = '[d]uplicate lines or selection' })
+
 -- [[ Configure LSP ]]
 --  This function gets run when an LSP connects to a particular buffer.
 local on_attach = function(_, bufnr)
@@ -712,10 +772,27 @@ local on_attach = function(_, bufnr)
     vim.keymap.set('n', keys, func, { buffer = bufnr, desc = desc })
   end
 
+  -- This is so hacky, but I don't know how to wait for the async lsp command to return...
+  local goto_def_or_ref = function()
+    local row1, _ = unpack(vim.api.nvim_win_get_cursor(0))
+    local res = require('telescope.builtin').lsp_definitions()
+    vim.wait(1000, function() -- run immediately, then every 1000ms after until function() returns true.
+      vim.cmd[[:sleep 100m]] -- sleep for 100 ms, then exit, so the 1000 in vim.wait never fires.
+      local row2, _ = unpack(vim.api.nvim_win_get_cursor(0))
+      print(row1, row2, res)
+      if row1 == row2 then
+        require('telescope.builtin').lsp_references()
+      end
+      return true
+    end)
+  end
+
   nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
   nmap('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
 
   nmap('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
+  -- Alternative:
+  nmap('<M-.>', goto_def_or_ref, '[G]oto [D]efinition')
   nmap('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
   nmap('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
   nmap('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
@@ -772,6 +849,7 @@ local servers = {
   rust_analyzer = {},
   tsserver = {},
   html = { filetypes = { 'html', 'twig', 'hbs'} },
+  zls = {},
 
   lua_ls = {
     Lua = {
@@ -828,6 +906,11 @@ mason_lspconfig.setup_handlers {
     }
   end,
 }
+
+-- Because the zls setup needs cmd at the root, not in the settings object like above?
+-- require'lspconfig'.zls.setup{
+--   cmd = { '/Users/chris/git/zls/zig-out/bin/zls' }
+-- }
 
 -- [[ Configure nvim-cmp ]]
 -- See `:help cmp`
@@ -907,6 +990,11 @@ npairs.setup({
 
 local cmp_autopairs = require "nvim-autopairs.completion.cmp"
 cmp.event:on("confirm_done", cmp_autopairs.on_confirm_done { map_char = { tex = "" } })
+
+-------------------------
+-- Load up my very small version of unimpaired
+-- for ]<space> and [<space> mappings:
+vim.cmd('source ~/.config/nvim/myunimpaired.vim')
 
 --
 -- Compiler commands

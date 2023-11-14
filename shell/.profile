@@ -34,3 +34,4 @@ if [ -d "$HOME/.local/bin" ] ; then
     PATH="$HOME/.local/bin:$PATH"
 fi
 . "$HOME/.cargo/env"
+export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
