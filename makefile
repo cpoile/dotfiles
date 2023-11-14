@@ -54,5 +54,6 @@ ubuntu:
 	sudo update-alternatives --config vim
 	sudo update-alternatives --install /usr/bin/editor editor /usr/bin/nvim 60
 	sudo update-alternatives --config editor
-	sudo chsh -s "$(command -v zsh)" "${USER}"
-	echo "Now restart the shell!\n"
+	./changeshell
+	@echo "Now restart the shell!\n"
+
