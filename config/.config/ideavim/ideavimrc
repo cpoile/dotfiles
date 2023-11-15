@@ -123,9 +123,8 @@ map <Leader>b         <Action>(RecentFiles)
 map <Leader>L         <Action>(RecentLocations)
 map <Leader>p         <Action>(PasteMultiple)
 map <Leader>z         <Action>(ToggleDistractionFreeMode)
-map <Leader>F         <Action>(ReformatCode)
+map <Leader>f         <Action>(ReformatCode)
 map <Leader>/         <Action>(FindInPath)
-map <Leader>f         <Action>(FrameSwitchAction)
 " not a leader command, but goes with the above
 map <C-s>            <Action>(FrameSwitchAction)
 
