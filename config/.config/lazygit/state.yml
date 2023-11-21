@@ -1,7 +1,9 @@
 lastupdatecheck: 0
 recentrepos:
-- /Users/chris/go/src/github.com/mattermost/calls
 - /Users/chris/git/dotfiles
+- /Users/chris/go/src/github.com/mattermost/mattermost-mobile
+- /Users/chris/go/src/github.com/mattermost/push-proxy
+- /Users/chris/go/src/github.com/mattermost/calls
 startuppopupversion: 5
 customcommandshistory: []
 hidecommandlog: false

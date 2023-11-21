@@ -489,6 +489,9 @@ vim.o.scrolloff = 10
 -- how much does c-d and c-u jump by
 vim.o.scroll = 20
 
+-- tabs should be 4
+vim.o.shiftwidth = 4
+
 -- Enable mouse mode
 vim.o.mouse = 'a'
 
@@ -530,7 +533,15 @@ vim.o.tabstop = 4
 vim.o.splitbelow = true
 vim.o.splitright = true
 
+-- Code folding using treesitter
+vim.opt.foldmethod = "expr"
+vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
+vim.opt.foldenable = false
+
 -- [[ Basic Keymaps ]]
+
+-- Fix neovim "fixing" default vim Y => yank whole line
+vim.keymap.set('n', 'Y', 'Y')
 
 -- Keymaps for better default experience
 -- See `:help vim.keymap.set()`
@@ -847,7 +858,7 @@ require('mason-lspconfig').setup()
 --  If you want to override the default filetypes that your language server will attach to you can
 --  define the property 'filetypes' to the map in question.
 local servers = {
-  -- clangd = {},
+  clangd = {},
   gopls = {},
   -- pyright = {},
   rust_analyzer = {},
@@ -967,9 +978,7 @@ cmp.setup {
 
 -- 
 -- [[ Configure nvim-autopairs ]]
-local npairs = require("nvim-autopairs")
-
-npairs.setup({
+require("nvim-autopairs").setup({
   check_ts = true,
   map_c_h = true,
   ts_config = {
@@ -980,7 +989,7 @@ npairs.setup({
   enable_check_bracket_line = false,
   ignored_next_char = "[%w%.]", -- will ignore alphanumeric and `.` symbol,
   fast_wrap = {
-    map = "<M-e>",
+    map = "<M-e>", -- slurp!
     chars = { "{", "[", "(", '"', "'" },
     pattern = string.gsub([[ [%'%"%)%>%]%)%}%,] ]], "%s+", ""),
     offset = 0, -- Offset from pattern match
