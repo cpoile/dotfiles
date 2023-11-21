@@ -267,6 +267,7 @@ fi
 
 if [[ $OSTYPE == linux* ]]; then
   export TERM=xterm-24bit
+  export PATH="$HOME/bin:$PATH"
 fi
 
 
