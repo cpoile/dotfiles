@@ -1,11 +1,13 @@
 lastupdatecheck: 0
 recentrepos:
-- /home/chris/git/dotfiles
-- /Users/chris/go/src/github.com/mattermost/calls
 - /Users/chris/git/dotfiles
 - /Users/chris/go/src/github.com/mattermost/mattermost-mobile
+- /Users/chris/go/src/github.com/mattermost/e2e
+- /Users/chris/go/src/github.com/mattermost/calls
+- /Users/chris/go/src/github.com/cpoile/practice
 - /Users/chris/go/src/github.com/mattermost/push-proxy
 startuppopupversion: 5
 customcommandshistory: []
 hidecommandlog: false
 ignorewhitespaceindiffview: false
+diffcontextsize: 3

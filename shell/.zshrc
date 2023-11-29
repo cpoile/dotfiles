@@ -241,9 +241,6 @@ if [[ $OSTYPE == darwin* ]]; then
   export PATH="/Users/chris/bin:$PATH"
   export PATH="/Users/chris/go/bin:$PATH"
 
-  # Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
-  export PATH="$PATH:$HOME/.rvm/bin"
-
   [[ -s "/Users/chris/.gvm/scripts/gvm" ]] && source "/Users/chris/.gvm/scripts/gvm"
 
   # alias emacs='open -a /Applications/Emacs.app $1'
@@ -259,6 +256,9 @@ if [[ $OSTYPE == darwin* ]]; then
   if [ -d "$(brew --prefix)/opt/grep/libexec/gnubin" ]; then
     PATH="$(brew --prefix)/opt/grep/libexec/gnubin:$PATH"
   fi
+
+  # Add rbenv to PATH for scripting. Make sure this is the last PATH variable change.
+  eval "$(rbenv init -)"
 fi
 
 ##
