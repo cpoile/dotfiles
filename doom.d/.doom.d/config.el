@@ -35,7 +35,12 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-zenburn)
+;;(setq doom-theme 'doom-zenburn)
+
+;;(add-to-list 'custom-theme-load-path "~/.doom.d/everforest-theme")
+;;(load-theme 'everforest-hard-dark t)
+(setq doom-theme 'forestbones)
+(set-face-attribute 'line-number-current-line nil :inherit nil)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -88,7 +93,8 @@
         version-control t       ; use versioned backups
         vc-make-backup-files t
         auto-save-interval 20
-        auto-save-timeout 5)
+        auto-save-timeout 5
+        global-hl-line-modes nil)
 
 ;; backup dirrectory is common for all files:
 (setq backup-directory-alist
@@ -122,31 +128,56 @@
 
 (use-package backup-walker)
 
+;; better scrolling
+(use-package golden-ratio-scroll-screen)
+(global-set-key [remap scroll-down-command] 'golden-ratio-scroll-screen-down)
+(global-set-key [remap scroll-up-command] 'golden-ratio-scroll-screen-up)
+
 ;; are we in a terminal?
 ;; (unless (display-graphic-p)
 ;;   (getenv-internal "TERM" initial-environment))
 
 ;;
+;; PROGRAMMING
+;;
+
+
+
+(use-package! smart-comment
+  :bind ("M-;" . smart-comment))
+
+(global-set-key (kbd "C-c ]") 'git-gutter:next-hunk)
+(global-set-key (kbd "C-c [") 'git-gutter:previous-hunk)
+
+;;
 ;; Odin setup
 ;;
 (load! "odin-mode.el")
+;;(package-vc-install "https://git.sr.ht/~mgmarlow/odin-mode")
+(use-package odin-mode
+  :bind (:map odin-mode-map
+      ;;("C-c C-r" . 'odin-run-project)
+      ;;("C-c C-c" . 'odin-build-project)
+      ("C-c C-r" . 'recompile)
+      ("C-c C-c" . 'compile)
+      ("C-c C-t" . 'odin-test-project)))
 
 (with-eval-after-load 'lsp-mode
   (add-to-list 'lsp-language-id-configuration
                '(odin-mode . "odin"))
   (lsp-register-client
-   (make-lsp-client :new-connection (lsp-stdio-connection "~/dev/odin/ols/ols")
+   (make-lsp-client :new-connection (lsp-stdio-connection "~/bin/ols")
                     :major-modes '(odin-mode)
                     :server-id 'ols
                     :multi-root t))) ;; This is just so lsp-mode sends the "workspaceFolders" param to the server.
 (add-hook 'odin-mode-hook #'lsp)
-(after! compile
-  (add-to-list 'compilation-error-regexp-alist-alist '(odin "^\\([A-Za-z0-9\\._/-]+\\)(\\([0-9]+\\):\\([0-9]+\\))" 1 2 3))
-  (add-to-list 'compilation-error-regexp-alist 'odin))
+;; (after! compile
+;;   (add-to-list 'compilation-error-regexp-alist-alist '(odin "^\\([A-Za-z0-9\\._/-]+\\)(\\([0-9]+\\):\\([0-9]+\\))" 1 2 3))
+;;   (add-to-list 'compilation-error-regexp-alist 'odin))
 
-(add-hook 'odin-mode-hook (lambda ()
-                            (setq comment-start "//"
-                                  comment-end   "")))
+;; (add-hook 'odin-mode-hook (lambda ()
+;;                             (setq comment-start "//"
+;;                                   comment-end   "")))
 
 ;; Should be in an after! macro, but we're definitely loading it above, so:
 (defun odin-previous-defun ()
@@ -177,7 +208,13 @@
 (setq doom-modeline-display-default-persp-name t)
 (setq! mark-even-if-inactive nil)
 (whole-line-or-region-global-mode)
-(setq! magit-diff-refine-hunk 'all)
+
+;; Magit
+(setq!
+ magit-diff-refine-hunk 'all
+ git-commit-summary-max-length 68)
+;; (use-package magit-delta
+;;   :hook (magit-mode . magit-delta-mode))
 
 ;; Add to a programming language map as needed (see rust below)
 ;; Not added because it doesn't seem to work in terminal mode
@@ -328,17 +365,12 @@
 ;; Customize zenburn
 ;;
 
-(set-face-attribute 'region nil :background "#5F5F5F")
-(set-face-attribute 'default nil :foreground "#D6D6C6" :background "#303030")
-(after! vertico
-  (set-face-attribute 'vertico-current nil :background "#494949"))
-(after! lsp-mode
-  (set-face-attribute 'lsp-face-highlight-textual nil :foreground "#D6D6C6" :background "#464C43"))
-
-;;
-;; Mode customizations
-;;
-;;(add-hook 'magit-mode-hook #'magit-delta-mode)
+;; (set-face-attribute 'region nil :background "#5F5F5F")
+;; (set-face-attribute 'default nil :foreground "#D6D6C6" :background "#303030")
+;; (after! vertico
+;;   (set-face-attribute 'vertico-current nil :background "#494949"))
+;; (after! lsp-mode
+;;   (set-face-attribute 'lsp-face-highlight-textual nil :foreground "#D6D6C6" :background "#464C43"))
 
 ;;
 ;; Custom functions
@@ -351,6 +383,9 @@
       (isearch-push-state)
       (isearch-yank-string region))))
 (add-hook 'isearch-mode-hook #'isearch-with-region)
+
+;; testing why yanking is weird:
+;; (ad-deactivate 'yank)
 
 ;;
 ;; Borrowed from crux -- consider loading it, if it doesn't clobber keybindings
@@ -368,6 +403,7 @@
         (backward-char))
     (setq end (line-end-position))
     (cons beg end)))
+
 
 ;; This fixes the duplicate lines bug, should be fixed eventually:
 ;; https://github.com/bbatsov/crux/pull/96
@@ -567,12 +603,12 @@ going through children."
   (forward-paragraph (- arg 3)))
 
 
-(map! :map text-mode-map "C-M-p" #'cp/backward-paragraph)
-(map! :map text-mode-map "M-p" #'cp/backward-paragraph)
-
 ;;
 ;; Keybindings
 ;;
+(map! :map text-mode-map "C-M-p" #'cp/backward-paragraph)
+(map! :map text-mode-map "M-p" #'cp/backward-paragraph)
+
 (map! "C-M-n" #'forward-paragraph)
 (map! "C-M-p" #'backward-paragraph)
 (map! "M-n" #'forward-paragraph)
@@ -606,6 +642,11 @@ going through children."
 ;; backward kill line (but only the visual line)
 (global-set-key (kbd "C-S-k") 'cp/backward-kill-visual-line)
 (global-set-key (kbd "C-k") 'kill-visual-line)
+(global-set-key (kbd "M-Z") 'zap-up-to-char)
+(global-set-key (kbd "M-<return>") '+default/newline-above)
+
+;; Because pressing esc key was bringing up the esc map, and esc again was global-back
+(global-set-key (kbd "<escape>") 'doom/escape)
 
 (after! org
   (map! :map org-mode-map "C-M-n" #'cp/org-next-visible-any-item-or-heading)
@@ -653,6 +694,30 @@ going through children."
 ;;     (map! "C-c C-," 'mc/mark-all-like-this)))
 
 ;;
+;; Highlight variable under cursor
+;;
+(use-package! idle-highlight-mode
+  :config (progn
+           (setq
+            idle-highlight-idle-time 0.3
+            idle-highlight-ignore-modes (list 'org-mode))
+           (set-face-attribute 'idle-highlight nil :background (doom-lighten "#1E262B" 0.10)))
+  :hook ((prog-mode text-mode) . idle-highlight-mode))
+
+;;
+;; Popup documentation
+;;
+(use-package! company-quickhelp
+  :config (progn
+            (setq
+             company-quickhelp-delay nil)
+            (set-face-attribute 'company-tooltip-selection nil :background (doom-lighten "#1E262B" 0.20)))
+  :hook (prog-mode . company-quickhelp-mode))
+
+(after! company-quickhelp
+  (define-key company-active-map (kbd "C-q") #'company-quickhelp-manual-begin))
+
+;;
 ;; Org-novelist
 ;;
 (load! "org-novelist.el")
@@ -680,16 +745,17 @@ going through children."
 
 
 ;; Clippety
-(use-package! clipetty
-  ;; if you omit :defer, :hook, :commands, or :after, then the package is loaded
-  ;; immediately. By using :hook here, the `hl-todo` package won't be loaded
-  ;; until prog-mode-hook is triggered (by activating a major mode derived from
-  ;; it, e.g. python-mode)
-  :ensure t
-  :bind ("M-w" . clipetty-kill-ring-save)
-  :config
-  ;; code here will run after the package is loaded
-  (setq clipetty-assume-nested-mux t))
+(unless (display-graphic-p)
+  (use-package! clipetty
+    ;; if you omit :defer, :hook, :commands, or :after, then the package is loaded
+    ;; immediately. By using :hook here, the `hl-todo` package won't be loaded
+    ;; until prog-mode-hook is triggered (by activating a major mode derived from
+    ;; it, e.g. python-mode)
+    :ensure t
+    :bind ("M-w" . clipetty-kill-ring-save)
+    :config
+    ;; code here will run after the package is loaded
+    (setq clipetty-assume-nested-mux t)))
 
 ;; Start almost full screen on mac
 (if (string-equal system-type "darwin")
@@ -737,20 +803,22 @@ Return an event vector."
                 ("\e\[%d;8u" control meta shift)))
         (setq c (1+ c))))))
 
-(eval-after-load "xterm" '(my-eval-after-load-xterm))
+(unless (display-graphic-p)
+ (eval-after-load "xterm" '(my-eval-after-load-xterm))
 
-;; to fix tmux (until this is fixed: https://github.com/tmux/tmux/issues/3721)
-(map! "C-*" 'undo-redo)
-;; I've set S-backspace to send Esc+[7;5- because I keep pressing it by accident
-;; See: https://www.vinc17.net/unix/ctrl-backspace.en.html
-(define-key global-map "\C-[[7;5~" 'backward-delete-char)
+ ;; to fix tmux (until this is fixed: https://github.com/tmux/tmux/issues/3721)
+ (map! "C-*" 'undo-redo)
+ ;; I've set S-backspace to send Esc+[7;5- because I keep pressing it by accident
+ ;; See: https://www.vinc17.net/unix/ctrl-backspace.en.html
+ (define-key global-map "\C-[[7;5~" 'backward-delete-char))
+
 
 ;;
 ;; Tree-sitter
 ;;
 ;; Should use:
- ;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
- ;; at least once per installation or while changing this list
+;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
+;; at least once per installation or while changing this list
  ;; (setq treesit-language-source-alist
  ;;  '((bash "https://github.com/tree-sitter/tree-sitter-bash")
  ;;     (cmake "https://github.com/uyha/tree-sitter-cmake")
@@ -769,7 +837,8 @@ Return an event vector."
  ;;     (yaml "https://github.com/ikatyang/tree-sitter-yaml")
  ;;     (c "https://github.com/tree-sitter/tree-sitter-c")
  ;;     (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
- ;;     (rust "https://github.com/tree-sitter/tree-sitter-rust")))
+ ;;     (rust "https://github.com/tree-sitter/tree-sitter-rust")
+ ;;     (odin "https://github.com/ap29600/tree-sitter-odin")))
 
  ;; (major-mode-remap-alist
  ;;  '((elixir-mode . elixir-ts-mode)))

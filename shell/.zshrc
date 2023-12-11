@@ -246,11 +246,26 @@ if [[ $OSTYPE == darwin* ]]; then
   # alias emacs='open -a /Applications/Emacs.app $1'
   # alias em='open -a /Applications/Emacs.app $1'
   # alias ec='/opt/homebrew/bin/emacsclient -nw'
-  alias rsync-working-to-cpoile='rsync -aE ~/go/src/github.com/mattermost/mattermost-mobile/node_modules/react-native-incall-manager ~/go/src/github.com/cpoile'
-  alias rsync-cpoile-to-working='rsync -aE --delete --exclude={'.git','.idea'} ~/go/src/github.com/cpoile/react-native-incall-manager ~/go/src/github.com/mattermost/mattermost-mobile/node_modules'
+
+  function rsync-to-cpoile() {
+    if [[ -z "$1" ]]; then
+        echo "need a directory off mattermost-mobile/node_modules/ e.g.: rsync-to-cpoile react-native-incall-manager"
+        return 0
+    fi
+    rsync -aE "$HOME/go/src/github.com/mattermost/mattermost-mobile/node_modules/$1" "$HOME/go/src/github.com/cpoile"
+  }
+
+  function rsync-to-mobile() {
+    if [[ -z "$1" ]]; then
+        echo "need a directory off cpoile/ e.g.: rsync-to-mobile react-native-incall-manager"
+        return 0
+    fi
+    rsync -aE --delete --exclude={'.git','.idea'} "$HOME/go/src/github.com/cpoile/$1" "$HOME/go/src/github.com/mattermost/mattermost-mobile/node_modules"
+  }
 
   export PATH="/opt/homebrew/opt/llvm@14/bin:$HOME/dev/odin/Odin:/Library/TeX/texbin:$PATH"
-  alias odin='LDFLAGS="-L/opt/homebrew/opt/llvm@14/lib" CPPFLAGS="-I/opt/homebrew/opt/llvm@14/include" odin'
+  alias odin='LDFLAGS="-L/opt/homebrew/opt/llvm/lib" CPPFLAGS="-I/opt/homebrew/opt/llvm/include" odin'
+  export ODIN_ROOT="$HOME/dev/odin/Odin"
 
   ## to fix the doom sync warnings about vertico's grep:
   if [ -d "$(brew --prefix)/opt/grep/libexec/gnubin" ]; then
@@ -295,3 +310,5 @@ autoload -U compinit; compinit
 test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 
 eval "$(zoxide init --cmd j zsh)"
+
+eval "$(atuin init zsh)"

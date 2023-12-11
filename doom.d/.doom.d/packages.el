@@ -61,3 +61,8 @@
 (package! backup-walker)
 (package! writeroom-mode)
 (package! clipetty)
+(package-install 'golden-ratio-scroll-screen)
+(package! hl-line :disable t)
+(package! idle-highlight-mode)
+(package! company-quickhelp)
+(package! smart-comment)

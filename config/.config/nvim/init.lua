@@ -113,7 +113,7 @@ require('lazy').setup({
   },
 
   -- Useful plugin to show you pending keybinds.
-  { 'folke/which-key.nvim', opts = {} },
+  { 'folke/which-key.nvim',  opts = {} },
   {
     -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
@@ -138,20 +138,22 @@ require('lazy').setup({
         map({ 'n' }, '<leader>hp', require('gitsigns').preview_hunk, { desc = 'Preview git hunk' })
         map({ 'n' }, '<leader>hs', gs.stage_hunk, { desc = '[s]tage hunk' })
         map({ 'n' }, '<leader>hr', gs.reset_hunk, { desc = '[r]eset hunk' })
-        map({ 'v' }, '<leader>hs', function() gs.stage_hunk {vim.fn.line('.'), vim.fn.line('v')} end, { desc = '[s]tage hunk' })
-        map({ 'v' }, '<leader>hr', function() gs.reset_hunk {vim.fn.line('.'), vim.fn.line('v')} end, { desc = '[r]eset hunk' })
+        map({ 'v' }, '<leader>hs', function() gs.stage_hunk { vim.fn.line('.'), vim.fn.line('v') } end,
+          { desc = '[s]tage hunk' })
+        map({ 'v' }, '<leader>hr', function() gs.reset_hunk { vim.fn.line('.'), vim.fn.line('v') } end,
+          { desc = '[r]eset hunk' })
         map({ 'n' }, '<leader>hS', gs.stage_buffer, { desc = '[S]tage buffer' })
         map({ 'n' }, '<leader>hu', gs.undo_stage_hunk, { desc = '[u]ndo stage hunk' })
         map({ 'n' }, '<leader>hR', gs.reset_buffer, { desc = '[R]eset buffer' })
         map({ 'n' }, '<leader>hp', gs.preview_hunk, { desc = '[p]review git hunk' })
-        map({ 'n' }, '<leader>hb', function() gs.blame_line{full=true} end, { desc = '[b]lame line' })
+        map({ 'n' }, '<leader>hb', function() gs.blame_line { full = true } end, { desc = '[b]lame line' })
         map({ 'n' }, '<leader>tb', gs.toggle_current_line_blame, { desc = 'toggle current line [b]lame' })
         map({ 'n' }, '<leader>hd', gs.diffthis, { desc = '[d]iff this' })
         map({ 'n' }, '<leader>hD', function() gs.diffthis('~') end, { desc = '[D]iff this with ~ (?)' })
         map({ 'n' }, '<leader>td', gs.toggle_deleted, { desc = 'toggle [d]eleted' })
 
         -- Text object
-        vim.keymap.set({'o', 'x'}, 'ih', ':<C-U>Gitsigns select_hunk<CR>')
+        vim.keymap.set({ 'o', 'x' }, 'ih', ':<C-U>Gitsigns select_hunk<CR>')
 
         -- don't override the built-in and fugitive keymaps
         vim.keymap.set({ 'n', 'v' }, ']c', function()
@@ -309,13 +311,17 @@ require('lazy').setup({
 
   {
     'rcarriga/nvim-dap-ui',
-    dependencies = {'mfussenegger/nvim-dap', 'leoluz/nvim-dap-go'},
+    dependencies = { 'mfussenegger/nvim-dap', 'leoluz/nvim-dap-go' },
     config = function()
-      vim.keymap.set('n', '<leader>dt', function() require('dap-go').debug_test() end, { desc = '[d]ebug nearest [t]est' })
+      vim.keymap.set('n', '<leader>dt', function() require('dap-go').debug_test() end,
+        { desc = '[d]ebug nearest [t]est' })
       vim.keymap.set('n', '<leader>du', function() require('dapui').toggle() end, { desc = 'toggle the dap [u]i' })
-      vim.keymap.set('n', '<Leader>db', function() require('dap').toggle_breakpoint() end, { desc = 'Toggle [b]reakpoint' })
+      vim.keymap.set('n', '<Leader>db', function() require('dap').toggle_breakpoint() end,
+        { desc = 'Toggle [b]reakpoint' })
       vim.keymap.set('n', '<Leader>dB', function() require('dap').set_breakpoint() end, { desc = 'Set [B]reakpoint' })
-      vim.keymap.set('n', '<Leader>dl', function() require('dap').set_breakpoint(nil, nil, vim.fn.input('Log point message: ')) end, { desc = '[l]og point message' })
+      vim.keymap.set('n', '<Leader>dl',
+        function() require('dap').set_breakpoint(nil, nil, vim.fn.input('Log point message: ')) end,
+        { desc = '[l]og point message' })
       vim.keymap.set('n', '<F5>', function() require('dap').continue() end, { desc = 'Start debugging' })
       vim.keymap.set('n', '<F10>', function() require('dap').step_over() end, { desc = 'Step over' })
       vim.keymap.set('n', '<F11>', function() require('dap').step_into() end, { desc = 'Step into' })
@@ -336,7 +342,7 @@ require('lazy').setup({
           local new_value = not vim.diagnostic.config().virtual_text
           vim.diagnostic.config({ virtual_text = new_value })
         end,
-      { desc = "toggle [l]sp_lines" })
+        { desc = "toggle [l]sp_lines" })
     end,
   },
 
@@ -345,17 +351,18 @@ require('lazy').setup({
     config = function()
       require("auto-session").setup {
         log_level = "error",
-        auto_session_suppress_dirs = { "~/", "~/Projects", "~/Downloads", "/"},
+        auto_session_suppress_dirs = { "~/", "~/Projects", "~/Downloads", "/" },
         auto_session_enable_last_session = false,
         cwd_change_handling = {
-          restore_upcoming_session = true, -- already the default, no need to specify like this, only here as an example
-          pre_cwd_changed_hook = nil, -- already the default, no need to specify like this, only here as an example
+          restore_upcoming_session = true,   -- already the default, no need to specify like this, only here as an example
+          pre_cwd_changed_hook = nil,        -- already the default, no need to specify like this, only here as an example
           post_cwd_changed_hook = function() -- example refreshing the lualine status line _after_ the cwd changes
-            require("lualine").refresh() -- refresh lualine so the new session name is displayed in the status bar
+            require("lualine").refresh()     -- refresh lualine so the new session name is displayed in the status bar
           end,
         },
       }
-      vim.keymap.set('n', "<C-s>", require("auto-session.session-lens").search_session, { noremap = true, desc = '[C-s]earch sessions'})
+      vim.keymap.set('n', "<C-s>", require("auto-session.session-lens").search_session,
+        { noremap = true, desc = '[C-s]earch sessions' })
     end
   },
 
@@ -366,11 +373,12 @@ require('lazy').setup({
       "nvim-lua/plenary.nvim",
       "nvim-tree/nvim-web-devicons", -- not strictly required, but recommended
       "MunifTanjim/nui.nvim",
-      "3rd/image.nvim", -- Optional image support in preview window: See `# Preview Mode` for more information
+      "3rd/image.nvim",              -- Optional image support in preview window: See `# Preview Mode` for more information
     },
     config = function()
       require('neo-tree').setup {
-        vim.keymap.set('n', "¡", '<Cmd>Neotree toggle reveal_force_cwd<cr>', { desc = 'Neotree toggle reveal current file'})
+        vim.keymap.set('n', "¡", '<Cmd>Neotree toggle reveal_force_cwd<cr>',
+          { desc = 'Neotree toggle reveal current file' })
       }
     end
   },
@@ -392,14 +400,14 @@ require('lazy').setup({
     }
   },
   {
-      'glacambre/firenvim',
+    'glacambre/firenvim',
 
-      -- Lazy load firenvim
-      -- Explanation: https://github.com/folke/lazy.nvim/discussions/463#discussioncomment-4819297
-      lazy = not vim.g.started_by_firenvim,
-      build = function()
-          vim.fn["firenvim#install"](0)
-      end
+    -- Lazy load firenvim
+    -- Explanation: https://github.com/folke/lazy.nvim/discussions/463#discussioncomment-4819297
+    lazy = not vim.g.started_by_firenvim,
+    build = function()
+      vim.fn["firenvim#install"](0)
+    end
   },
 
   {
@@ -416,7 +424,8 @@ require('lazy').setup({
   {
     'gbprod/yanky.nvim',
     config = function()
-      vim.keymap.set('n', '<leader>p', require('telescope').extensions.yank_history.yank_history, { desc = '[p]aste from yank history'})
+      vim.keymap.set('n', '<leader>p', require('telescope').extensions.yank_history.yank_history,
+        { desc = '[p]aste from yank history' })
       -- and if you want to paste from yanky and then cycle through the history:
       vim.keymap.set('n', 'p', '<Plug>(YankyPutAfter)')
       vim.keymap.set('n', 'P', '<Plug>(YankyPutBefore)')
@@ -445,7 +454,7 @@ require('lazy').setup({
     "https://git.sr.ht/~nedia/auto-save.nvim",
     config = function()
       require('auto-save').setup({
-        events = {'FocusLost', 'BufLeave' },
+        events = { 'FocusLost', 'BufLeave' },
       })
     end,
   },
@@ -464,7 +473,7 @@ require('lazy').setup({
 }, {})
 
 -- load my personal snippets
-require("luasnip.loaders.from_snipmate").lazy_load({paths = "~/.config/nvim/snippets"})
+require("luasnip.loaders.from_snipmate").lazy_load({ paths = "~/.config/nvim/snippets" })
 
 -- configure yany picker (like the emacs kill-ring)
 require('yanky').setup({
@@ -557,8 +566,8 @@ vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv")
 vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv")
 
 -- Helix has some greate interactive mode keybindings:
-vim.keymap.set({'i'}, '<C-d>', "<C-o>x")
-vim.keymap.set({'i'}, '<M-d>', "<C-o>dw")
+vim.keymap.set({ 'i' }, '<C-d>', "<C-o>x")
+vim.keymap.set({ 'i' }, '<M-d>', "<C-o>dw")
 -- conflicts with signature help from lsp
 -- vim.keymap.set({'i'}, '<C-k>', "<C-o>d$<right>")
 
@@ -577,14 +586,14 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 -- Triger `autoread` when files changes on disk
 -- https://unix.stackexchange.com/questions/149209/refresh-changed-content-of-file-opened-in-vim/383044#383044
 -- https://vi.stackexchange.com/questions/13692/prevent-focusgained-autocmd-running-in-command-line-editing-mode
-vim.api.nvim_create_autocmd({'FocusGained', 'BufEnter', 'CursorHold', 'CursorHoldI'}, {
+vim.api.nvim_create_autocmd({ 'FocusGained', 'BufEnter', 'CursorHold', 'CursorHoldI' }, {
   pattern = '*',
   command = "if mode() !~ '\v(c|r.?|!|t)' && getcmdwintype() == '' | checktime | endif",
 })
 
 -- Notification after file change
 -- https://vi.stackexchange.com/questions/13091/autocmd-event-for-autoread
-vim.api.nvim_create_autocmd({'FileChangedShellPost'}, {
+vim.api.nvim_create_autocmd({ 'FileChangedShellPost' }, {
   pattern = '*',
   command = "echohl WarningMsg | echo 'File changed on disk. Buffer reloaded.' | echohl None",
 })
@@ -593,7 +602,7 @@ vim.api.nvim_create_autocmd({'FileChangedShellPost'}, {
 -- See `:help telescope` and `:help telescope.setup()`
 require('telescope').setup {
   extensions = {
-    ["ui-select"] = {require("telescope.themes").get_dropdown({})},
+    ["ui-select"] = { require("telescope.themes").get_dropdown({}) },
   },
   defaults = {
     mappings = {
@@ -605,13 +614,13 @@ require('telescope').setup {
         ['d'] = "delete_buffer",
       }
     },
-    cache_picker = {num_pickers = 10},
+    cache_picker = { num_pickers = 10 },
     dynamic_preview_title = true,
     -- layout_strategy = "vertical",
     -- layout_config = {vertical = {width = 0.9, height = 0.9, preview_height = 0.6, preview_cutoff = 0}},
     layout_strategy = "horizontal",
-    layout_config = {horizontal = {width = 0.9, height = 0.9, preview_cutoff = 0}},
-    path_display = {"smart", shorten = {len = 2}}, -- only smart seems to work
+    layout_config = { horizontal = { width = 0.9, height = 0.9, preview_cutoff = 0 } },
+    path_display = { "smart", shorten = { len = 2 } }, -- only smart seems to work
     wrap_results = false,
     -- give more room for the filename:
   },
@@ -657,7 +666,9 @@ vim.keymap.set('n', '<leader>/', function()
 end, { desc = '[/] Fuzzily search in current buffer' })
 
 vim.keymap.set('n', '<leader>gf', require('telescope.builtin').git_files, { desc = 'Search [G]it [F]iles' })
-vim.keymap.set('n', '<leader>sf', "<cmd>lua require('telescope.builtin').find_files({ find_command = {'rg', '--files', '--hidden', '-g', '!.git' }})<cr>", { desc = '[S]earch [F]iles' })
+vim.keymap.set('n', '<leader>sf',
+  "<cmd>lua require('telescope.builtin').find_files({ find_command = {'rg', '--files', '--hidden', '-g', '!.git' }})<cr>",
+  { desc = '[S]earch [F]iles' })
 vim.keymap.set('n', '<leader>sh', require('telescope.builtin').help_tags, { desc = '[S]earch [H]elp' })
 vim.keymap.set('n', '<leader>sw', require('telescope.builtin').grep_string, { desc = '[S]earch current [W]ord' })
 vim.keymap.set('n', '<leader>sg', require('telescope.builtin').live_grep, { desc = '[S]earch by [G]rep' })
@@ -675,7 +686,8 @@ vim.keymap.set('n', '<leader>ts', '<Cmd>set hlsearch!<cr>', { desc = 'toggle hig
 vim.defer_fn(function()
   require('nvim-treesitter.configs').setup {
     -- Add languages to be installed here that you want installed for treesitter
-    ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'javascript', 'typescript', 'vimdoc', 'vim', 'bash', 'zig' },
+    ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'javascript', 'typescript', 'vimdoc', 'vim',
+      'bash', 'zig', 'odin' },
 
     -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
     auto_install = false,
@@ -737,7 +749,7 @@ vim.defer_fn(function()
         },
       },
     },
-      refactor = {
+    refactor = {
       highlight_definitions = {
         enable = true,
         -- Set to false if you have an `updatetime` of ~100.
@@ -753,10 +765,10 @@ vim.defer_fn(function()
   -- vim.keymap.set({ "n", "x", "o" }, ",", ts_repeat_move.repeat_last_move_opposite)
 
   -- Optionally, make builtin f, F, t, T also repeatable with ; and ,
-    -- vim.keymap.set({ "n", "x", "o" }, "f", ts_repeat_move.builtin_f)
-    -- vim.keymap.set({ "n", "x", "o" }, "F", ts_repeat_move.builtin_F)
-    -- vim.keymap.set({ "n", "x", "o" }, "t", ts_repeat_move.builtin_t)
-    -- vim.keymap.set({ "n", "x", "o" }, "T", ts_repeat_move.builtin_T)
+  -- vim.keymap.set({ "n", "x", "o" }, "f", ts_repeat_move.builtin_f)
+  -- vim.keymap.set({ "n", "x", "o" }, "F", ts_repeat_move.builtin_F)
+  -- vim.keymap.set({ "n", "x", "o" }, "t", ts_repeat_move.builtin_t)
+  -- vim.keymap.set({ "n", "x", "o" }, "T", ts_repeat_move.builtin_T)
 end, 0)
 
 -- Diagnostic keymaps
@@ -791,7 +803,7 @@ local on_attach = function(_, bufnr)
     local row1, _ = unpack(vim.api.nvim_win_get_cursor(0))
     local res = require('telescope.builtin').lsp_definitions()
     vim.wait(1000, function() -- run immediately, then every 1000ms after until function() returns true.
-      vim.cmd[[:sleep 100m]] -- sleep for 100 ms, then exit, so the 1000 in vim.wait never fires.
+      vim.cmd [[:sleep 100m]] -- sleep for 100 ms, then exit, so the 1000 in vim.wait never fires.
       local row2, _ = unpack(vim.api.nvim_win_get_cursor(0))
       print(row1, row2, res)
       if row1 == row2 then
@@ -863,8 +875,13 @@ local servers = {
   -- pyright = {},
   rust_analyzer = {},
   tsserver = {},
-  html = { filetypes = { 'html', 'twig', 'hbs'} },
+  html = { filetypes = { 'html', 'twig', 'hbs' } },
   zls = {},
+  -- ols = {
+  --   command = "/Users/chris/dev/odin/ols",
+  --   filetypes = { "odin" },
+  --   rootPatterns = { "ols.json" },
+  -- },
 
   lua_ls = {
     Lua = {
@@ -927,6 +944,14 @@ mason_lspconfig.setup_handlers {
 --   cmd = { '/Users/chris/git/zls/zig-out/bin/zls' }
 -- }
 
+-- same as zig? ... doesn't seem to work...
+-- require'lspconfig'.ols.setup{
+--   cmd = { "/Users/chris/bin/ols" },
+--   filetypes = { "odin" },
+--   root_dir = require'lspconfig'.util.root_pattern("ols.json", ".git"),
+--   single_file_support = true,
+-- }
+
 -- [[ Configure nvim-cmp ]]
 -- See `:help cmp`
 local cmp = require 'cmp'
@@ -976,20 +1001,20 @@ cmp.setup {
   },
 }
 
--- 
+--
 -- [[ Configure nvim-autopairs ]]
 require("nvim-autopairs").setup({
   check_ts = true,
   map_c_h = true,
   ts_config = {
-      lua = {'string'},-- it will not add a pair on that treesitter node
-      javascript = {'template_string'},
-      -- java = false,-- don't check treesitter on java
+    lua = { 'string' }, -- it will not add a pair on that treesitter node
+    javascript = { 'template_string' },
+    -- java = false,-- don't check treesitter on java
   },
   enable_check_bracket_line = false,
   ignored_next_char = "[%w%.]", -- will ignore alphanumeric and `.` symbol,
   fast_wrap = {
-    map = "<M-e>", -- slurp!
+    map = "<M-e>",              -- slurp!
     chars = { "{", "[", "(", '"', "'" },
     pattern = string.gsub([[ [%'%"%)%>%]%)%}%,] ]], "%s+", ""),
     offset = 0, -- Offset from pattern match
@@ -998,7 +1023,7 @@ require("nvim-autopairs").setup({
     check_comma = true,
     highlight = "PmenuSel",
     highlight_grey = "LineNr",
-    },
+  },
 })
 
 local cmp_autopairs = require "nvim-autopairs.completion.cmp"
@@ -1011,7 +1036,7 @@ vim.cmd('source ~/.config/nvim/myunimpaired.vim')
 
 --
 -- Compiler commands
--- 
+--
 -- local augroup = vim.api.nvim_create_augroup("chris", { clear = true })
 -- vim.api.nvim_create_autocmd("FileType", {
 --   pattern = "typescript,typescriptreact",

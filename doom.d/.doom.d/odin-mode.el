@@ -17,6 +17,11 @@
   "Odin mode"
   :group 'languages)
 
+;; `compilation-mode' configuration
+
+(eval-after-load 'compile
+ '(add-to-list 'compilation-error-regexp-alist '("^\\(.*?\\)(\\([0-9]+\\):\\([0-9]+\\).*" 1 2 3)))
+
 (defconst odin-mode-syntax-table
   (let ((table (make-syntax-table)))
     (modify-syntax-entry ?\" "\"" table)
@@ -226,8 +231,7 @@
   (defmacro setq-local (var val)
     `(set (make-local-variable ',var) ,val)))
 
-;; (defconst odin--defun-rx "\(.*\).*\{")
-(defconst odin--defun-rx ":: proc\(")
+(defconst odin--defun-rx "\(.*\).*\{")
 
 (defmacro odin-paren-level ()
   `(car (syntax-ppss)))
@@ -258,11 +262,6 @@
         (backward-char))))
   (if (odin-line-is-defun)
       (beginning-of-line)))
-
-(defun odin-previous-defun ()
-  "Go to previous proc."
-  (interactive)
-  (re-search-backward odin--defun-rx))
 
 (defun odin-end-of-defun ()
   "Go to line on which current function ends."
@@ -296,7 +295,8 @@
   (setq-local end-of-defun-function 'odin-end-of-defun)
   (setq-local electric-indent-chars
               (append "{}():;," electric-indent-chars))
-  (setq indent-tabs-mode t)
+  (setq-local indent-tabs-mode t)
+  (setq-local tab-width 2)
   (setq imenu-generic-expression
         `(("type" ,(concat "^" odin-type-rx) 1)
           ("proc" ,(concat "^" odin-proc-rx) 1)))

@@ -55,5 +55,6 @@ ubuntu:
 	sudo update-alternatives --install /usr/bin/editor editor /usr/bin/nvim 60
 	sudo update-alternatives --config editor
 	./changeshell
+	bash <(curl https://raw.githubusercontent.com/atuinsh/atuin/main/install.sh)
 	@echo "Now restart the shell!\n"
 
