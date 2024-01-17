@@ -160,6 +160,37 @@
 (global-set-key (kbd "C-c [") 'git-gutter:previous-hunk)
 
 (define-key prog-mode-map (kbd "C-q") 'lsp-ui-doc-show)
+;;
+;; Jai setup
+;;
+
+(load! "jai-mode.el")
+(use-package jai-mode
+  :bind (:map jai-mode-map
+      ;;("C-c C-r" . 'jai-run-project)
+      ;;("C-c C-c" . 'jai-build-project)
+      ("C-c C-r" . 'recompile)
+      ("C-c C-c" . 'compile)
+      ("C-c C-t" . 'jai-test-project)))
+
+(defun jai-previous-defun ()
+  "Go to previous proc."
+  (interactive)
+  (beginning-of-line)
+  (re-search-backward jai--defun-rx)
+  (beginning-of-line))
+
+(defun jai-next-defun ()
+  "Go to next proc."
+  (interactive)
+  (forward-line)
+  (re-search-forward jai--defun-rx)
+  (beginning-of-line))
+
+(map! :map jai-mode-map
+      "C-M-e" #'jai-next-defun
+      "C-M-a" #'jai-previous-defun)
+
 
 ;;
 ;; Odin setup
