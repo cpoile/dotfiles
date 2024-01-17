@@ -49,6 +49,10 @@
 ;;(load-theme 'everforest-hard-dark t)
 (setq doom-theme 'forestbones)
 (set-face-attribute 'line-number-current-line nil :inherit nil)
+(after! whitespace
+  (set-face-attribute 'whitespace-tab nil :background "#242D34"))
+(after! org
+  (set-face-attribute 'org-block nil :background "#2A3339"))
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -149,11 +153,13 @@
 ;; PROGRAMMING
 ;;
 
-;; (use-package! smart-comment
-;;   :bind ("M-;" . smart-comment))
+(use-package! smart-comment
+  :bind ("M-;" . smart-comment))
 
 (global-set-key (kbd "C-c ]") 'git-gutter:next-hunk)
 (global-set-key (kbd "C-c [") 'git-gutter:previous-hunk)
+
+(define-key prog-mode-map (kbd "C-q") 'lsp-ui-doc-show)
 
 ;;
 ;; Odin setup
@@ -166,7 +172,8 @@
       ;;("C-c C-c" . 'odin-build-project)
       ("C-c C-r" . 'recompile)
       ("C-c C-c" . 'compile)
-      ("C-c C-t" . 'odin-test-project)))
+      ("C-c C-t" . 'odin-test-project)
+      ))
 
 
 
@@ -186,9 +193,14 @@
 ;;   (add-to-list 'compilation-error-regexp-alist-alist '(odin "^\\([A-Za-z0-9\\._/-]+\\)(\\([0-9]+\\):\\([0-9]+\\))" 1 2 3))
 ;;   (add-to-list 'compilation-error-regexp-alist 'odin))
 
-;; (add-hook 'odin-mode-hook (lambda ()
-;;                             (setq comment-start "//"
-;;                                   comment-end   "")))
+(add-hook 'odin-mode-hook (lambda ()
+                            (setq comment-start "//"
+                                  comment-end   "")
+                            ;; (setq indent-tabs-mode nil)
+                            ;; (setq indent-line-function 'relative-line-indent)
+                            (setq lsp-ui-doc-max-height 40)
+                            (setq lsp-ui-doc-max-width 150)
+                            ))
 
 ;; Should be in an after! macro, but we're definitely loading it above, so:
 (defun odin-previous-defun ()
@@ -221,9 +233,10 @@
 (whole-line-or-region-global-mode)
 
 ;; Magit
-(setq!
- magit-diff-refine-hunk 'all
- git-commit-summary-max-length 68)
+(after! magit
+  (setq!
+   magit-diff-refine-hunk 'all
+   git-commit-summary-max-length 68))
 ;; (use-package magit-delta
 ;;   :hook (magit-mode . magit-delta-mode))
 
@@ -597,7 +610,8 @@ going through children."
 
 ;; turn of company mode by default. If you want to turn it on in some modes,
 ;; see: https://emacs.stackexchange.com/questions/48871/how-to-enable-company-mode-for-some-buffers-only
-(global-company-mode -1)
+(after! company
+  (global-company-mode -1))
 
 ;; and make txt files use paragraph indents as the paragraph breaks.
 ;; TODO: this changes for everyone -- need to fix
@@ -654,8 +668,11 @@ going through children."
 ;; backward kill line (but only the visual line)
 (global-set-key (kbd "C-S-k") 'cp/backward-kill-visual-line)
 (global-set-key (kbd "C-k") 'kill-visual-line)
-(global-set-key (kbd "M-Z") 'zap-up-to-char)
+(global-set-key (kbd "M-Z") 'zap-to-char)
+(global-set-key (kbd "M-z") 'zap-up-to-char)
 (global-set-key (kbd "M-<return>") '+default/newline-above)
+;; (global-set-key (kbd "C-o") '+default/newline-above)
+;; (global-set-key (kbd "C-S-o") 'open-line)
 
 ;; Because pressing esc key was bringing up the esc map, and esc again was global-back
 (global-set-key (kbd "<escape>") 'doom/escape)
@@ -670,6 +687,7 @@ going through children."
   (map! :map org-mode-map "C-M-u" #'cp/org-up-immediate-heading)
   (map! :map org-mode-map "M-}" #'back-button-local-forward)
   (map! :map org-mode-map "M-{" #'back-button-local-backward)
+  (map! :map org-mode-map "C-o" #'+org/insert-item-above)
 
   ;; (map! :map org-mode-map "M-n" #'cp/org-next-visible-any-item-or-heading)
   ;; (map! :map org-mode-map "M-p" #'cp/org-prev-visible-any-item-or-heading)

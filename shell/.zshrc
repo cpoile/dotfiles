@@ -193,6 +193,31 @@ if [[ $OSTYPE == darwin* ]]; then
       ./bin/mmctl --local team users add testteam jon jonm chris chrism andrew andrewm matt mattm bob tasha sysadmin user-1 samuel.tucker
   }
 
+  # Need to have logged in with admin/admin
+  function mm-setup-docker {
+      ./bin/mmctl auth login http://localhost:8065
+      ./bin/mmctl sampledata
+      ./bin/mmctl license upload ./dev-enterprise.mattermost-license
+      ./bin/mmctl user create --username sysadmin --email cpoile+10@gmail.com --firstname sys --lastname admin --password 'Sys@dmin-sample1' --system-admin
+      ./bin/mmctl user create --username sysadmin --email cpoile+11@gmail.com --firstname user1 --lastname one --password 'SampleUs@r-1'
+      ./bin/mmctl user create --username chris --email cpoile@gmail.com --firstname Chris --lastname Poile --password 'Testtest1!' --system-admin
+      ./bin/mmctl user create --username chrism --email cpoile+4@gmail.com --firstname Chris Mobile --lastname Poile --password 'Testtest1!'
+      ./bin/mmctl user create --username jon --email cpoile+1@gmail.com --firstname Jon --lastname Woodco --password 'Testtest1!'
+      ./bin/mmctl user create --username jonm --email cpoile+5@gmail.com --firstname Jon --lastname Woodco --password 'Testtest1!'
+      ./bin/mmctl user create --username Andrew --email cpoile+2@gmail.com --firstname Andrew --lastname Carson --password 'Testtest1!'
+      ./bin/mmctl user create --username Andrewm --email cpoile+9@gmail.com --firstname AndrewMobile --lastname Carson --password 'Testtest1!'
+      ./bin/mmctl user create --username Matt --email cpoile+3@gmail.com --password 'Testtest1!'
+      ./bin/mmctl user create --username mattm --email cpoile+8@gmail.com --firstname Matt Mobile --lastname Poile --password 'Testtest1!'
+      ./bin/mmctl user create --username Bob --email cpoile+6@gmail.com --password 'Testtest1!' --firstname Bob --lastname Glover
+      ./bin/mmctl user create --username Bobm --email cpoile+14@gmail.com --password 'Testtest1!' --firstname Bob --lastname Glover
+      ./bin/mmctl user create --username Tasha --email cpoile+7@gmail.com --password 'Testtest1!' --firstname Tasha --lastname Glover
+      ./bin/mmctl user create --username long --email cpoile+12@gmail.com --password 'Testtest1!' --firstname AVeryVeryVeryLongFirstNameThisIsTooLong --lastname AVeryVeryVeryLongLastName
+      ./bin/mmctl team users add ad-1 jon jonm chris chrism andrew andrewm matt mattm bob tasha sysadmin user-1 samuel.tucker bobm
+      ./bin/mmctl team create --name testteam --display-name "Test Team"
+      ./bin/mmctl team users add testteam jon jonm chris chrism andrew andrewm matt mattm bob tasha sysadmin user-1 samuel.tucker
+  }
+
+
   function mm-build-test {
       DEBUG= MM_DEBUG= MM_RUDDER_DATAPLANE_URL=https://pdat.matterlytics.com MM_RUDDER_WRITE_KEY=1Zu3mOF6U6M9zeaJsfmmhYigWLt make dist
   }
@@ -266,6 +291,8 @@ if [[ $OSTYPE == darwin* ]]; then
   export PATH="/opt/homebrew/opt/llvm@14/bin:$HOME/dev/odin/Odin:/Library/TeX/texbin:$PATH"
   alias odin='LDFLAGS="-L/opt/homebrew/opt/llvm/lib" CPPFLAGS="-I/opt/homebrew/opt/llvm/include" odin'
   export ODIN_ROOT="$HOME/dev/odin/Odin"
+
+  export CXX="/Users/chris/bin/cc"
 
   ## to fix the doom sync warnings about vertico's grep:
   if [ -d "$(brew --prefix)/opt/grep/libexec/gnubin" ]; then
