@@ -24,8 +24,16 @@
 ;;(setq doom-font (font-spec :family "Meslo LG S" :size 12 :weight 'normal)
 ;;     doom-variable-pitch-font (font-spec :family "Fira Sans" :size 13))
 ;;(setq doom-font (font-spec :family "Meslo LG S" :size 12 :weight 'normal))
-(setq doom-font (font-spec :family "JetBrains Mono" :size 12 :weight 'Light))
+
+(if (string-equal system-type "darwin")
+    (progn
+      (setq doom-font (font-spec :family "JetBrains Mono" :size 12 :weight 'Light))))
+
 (setq line-spacing 0)
+
+;; (setq exec-path (append exec-path
+;;                        '("C:/msys64/mingw64/bin")))
+
 ;;
 ;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
 ;; up, `M-x eval-region' to execute elisp code, and 'M-x doom/reload-font' to
@@ -141,10 +149,8 @@
 ;; PROGRAMMING
 ;;
 
-
-
-(use-package! smart-comment
-  :bind ("M-;" . smart-comment))
+;; (use-package! smart-comment
+;;   :bind ("M-;" . smart-comment))
 
 (global-set-key (kbd "C-c ]") 'git-gutter:next-hunk)
 (global-set-key (kbd "C-c [") 'git-gutter:previous-hunk)
@@ -162,14 +168,19 @@
       ("C-c C-c" . 'compile)
       ("C-c C-t" . 'odin-test-project)))
 
+
+
+
+
 (with-eval-after-load 'lsp-mode
   (add-to-list 'lsp-language-id-configuration
                '(odin-mode . "odin"))
-  (lsp-register-client
-   (make-lsp-client :new-connection (lsp-stdio-connection "~/bin/ols")
-                    :major-modes '(odin-mode)
-                    :server-id 'ols
-                    :multi-root t))) ;; This is just so lsp-mode sends the "workspaceFolders" param to the server.
+  (let ((ols-exec (if (string-equal system-type "darwin") "~/bin/ols" "~/git/ols/ols.exe")))
+    (lsp-register-client
+     (make-lsp-client :new-connection (lsp-stdio-connection ols-exec)
+                      :major-modes '(odin-mode)
+                      :server-id 'ols
+                      :multi-root t)))) ;; This is just so lsp-mode sends the "workspaceFolders" param to the server.
 (add-hook 'odin-mode-hook #'lsp)
 ;; (after! compile
 ;;   (add-to-list 'compilation-error-regexp-alist-alist '(odin "^\\([A-Za-z0-9\\._/-]+\\)(\\([0-9]+\\):\\([0-9]+\\))" 1 2 3))
@@ -399,8 +410,9 @@
     (setq beg (line-beginning-position))
     (if mark-active
         (exchange-point-and-mark))
-    (if (and (= (current-column) 0) (> (point) (mark)))
-        (backward-char))
+    (if mark-active
+        (if (and (= (current-column) 0) (> (point) (mark)))
+            (backward-char)))
     (setq end (line-end-position))
     (cons beg end)))
 
@@ -671,6 +683,7 @@ going through children."
   ;; (map! :map org-mode-map "M-[" #'org-metaleft)
   (map! :map org-mode-map "C-e" #'end-of-visual-line))
 
+
 ;;
 ;; Multiple cursors
 ;;
@@ -692,6 +705,11 @@ going through children."
 ;;     (map! "C-M->" 'mc/mark-next-like-this)
 ;;     (map! "C-M-<" 'mc/mark-previous-like-this)
 ;;     (map! "C-c C-," 'mc/mark-all-like-this)))
+
+;; Now C-x SPC will be rectangle mark mode
+(after! back-button
+  (map! :map back-button-mode-map "C-x SPC" nil))
+
 
 ;;
 ;; Highlight variable under cursor
@@ -893,7 +911,7 @@ Return an event vector."
          ("C-." . +lookup/references))
   :hook ((go-mode . lsp-deferred)))
 
-;;
+;; ->
 ;; don't need this bc we're just not going to use treesit for now
 ;;
 ;;(defun go-mode-run-hooks () (run-hooks 'go-mode-hook))
@@ -902,3 +920,11 @@ Return an event vector."
 ;;
 (after! go-ts-mode
   (setq auto-mode-alist (delete '("\\.go\\'" . go-ts-mode) auto-mode-alist)))
+
+
+(if (string-equal system-type "windows-nt")
+    (progn
+      (setq doom-font (font-spec :family "JetBrainsMono NF" :size 25)
+            nerd-icons-font-family "JetBrainsMono NF")
+      ;; Remember to run doom env from a windows cmd, not from mingw
+      (doom-load-envvars-file "~/.emacs.d/.local/env")))

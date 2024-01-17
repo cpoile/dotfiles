@@ -7,6 +7,10 @@
 
 ;; This file is NOT part of GNU Emacs.
 
+;;; Commentary:
+;;
+;; Major mdoe for Odin
+;;
 ;;; Code:
 
 (require 'cl-lib)
@@ -287,8 +291,9 @@
   (setq-local require-final-newline mode-require-final-newline)
   (setq-local parse-sexp-ignore-comments t)
   (setq-local comment-start-skip "\\(//+\\|/\\*+\\)\\s *")
-  (setq-local comment-start "/*")
-  (setq-local comment-end "*/")
+  (setq-local comment-start "//")
+  (setq-local block-comment-start "/*")
+  (setq-local block-comment-end "*/")
   (setq-local indent-line-function 'js-indent-line)
   (setq-local font-lock-defaults '(odin-font-lock-defaults))
   (setq-local beginning-of-defun-function 'odin-beginning-of-defun)
