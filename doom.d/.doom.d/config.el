@@ -785,6 +785,16 @@ going through children."
   (define-key company-active-map (kbd "C-q") #'company-quickhelp-manual-begin))
 
 ;;
+;; Dumb-jump for jai instead of using an ols
+;;
+(use-package! dumb-jump
+  :config (progn
+            (setq dumb-jump-force-searcher 'rg)
+            (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+  )
+
+
+;;
 ;; Org-novelist
 ;;
 (load! "org-novelist.el")
