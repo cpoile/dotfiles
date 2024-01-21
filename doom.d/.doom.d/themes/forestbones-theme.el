@@ -60,7 +60,6 @@ Can be an integer to determine the exact padding."
    ;; These should represent a spectrum from bg to fg, where base0 is a starker
    ;; bg and base8 is a starker fg. For example, if bg is light grey and fg is
    ;; dark grey, base0 should be white and base8 should be black.
-   ;; 12161A
    (base0      '("#1C2329" "black"       "black"        ))
    (base1      '("#2e3437" "#1e1e1e"     "brightblack"  ))
    (base2      '("#414545" "#2e2e2e"     "brightblack"  ))
@@ -108,7 +107,8 @@ Can be an integer to determine the exact padding."
    (strings        dark-fg)
    (variables      (doom-lighten magenta 0.4))
    (numbers        fg)
-   (region         `(,(doom-lighten (car bg-alt) 0.15) ,@(doom-lighten (cdr base1) 0.35)))
+   ;;(region         `(,(doom-lighten (car bg-alt) 0.15) ,@(doom-lighten (cdr base1) 0.35)))
+   (region         '("#59544A"))
    (error          red)
    (warning        yellow)
    (success        green)

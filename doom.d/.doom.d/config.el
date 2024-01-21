@@ -27,12 +27,9 @@
 
 (if (string-equal system-type "darwin")
     (progn
-      (setq doom-font (font-spec :family "JetBrains Mono" :size 12 :weight 'Light))))
+      (setq doom-font (font-spec :family "JetBrains Mono" :size 15 :weight 'Light))))
 
 (setq line-spacing 0)
-
-;; (setq exec-path (append exec-path
-;;                        '("C:/msys64/mingw64/bin")))
 
 ;;
 ;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
@@ -45,14 +42,11 @@
 ;; `load-theme' function. This is the default:
 ;;(setq doom-theme 'doom-zenburn)
 
-;;(add-to-list 'custom-theme-load-path "~/.doom.d/everforest-theme")
-;;(load-theme 'everforest-hard-dark t)
 (setq doom-theme 'forestbones)
+
 (set-face-attribute 'line-number-current-line nil :inherit nil)
 (after! whitespace
   (set-face-attribute 'whitespace-tab nil :background "#242D34"))
-(after! org
-  (set-face-attribute 'org-block nil :background "#2A3339"))
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -170,8 +164,7 @@
       ;;("C-c C-r" . 'jai-run-project)
       ;;("C-c C-c" . 'jai-build-project)
       ("C-c C-r" . 'recompile)
-      ("C-c C-c" . 'compile)
-      ("C-c C-t" . 'jai-test-project)))
+      ("C-c C-c" . 'compile)))
 
 (defun jai-previous-defun ()
   "Go to previous proc."
@@ -625,6 +618,18 @@ going through children."
 
 (add-hook 'org-font-lock-set-keywords-hook 'cp/set-inline-todo-keyword)
 
+(defun cp/copy-buffer-to-other-window ()
+  "Move the current buffer to the other window"
+  (interactive)
+  (switch-to-buffer-other-window (buffer-name)))
+
+(defun cp/move-buffer-to-other-window ()
+  "Move the current buffer to the other window"
+  (interactive)
+  (let ((current-buffer (buffer-name)))
+    (bury-buffer)
+    (switch-to-buffer-other-window current-buffer)))
+
 ;; Misc fixes
 
 
@@ -691,6 +696,9 @@ going through children."
 ;; because those conflict in org-mode, backup
 (map! "C-c d" #'crux-duplicate-current-line-or-region)
 (map! "C-M-j" #'crux-top-join-line)
+
+(map! "C-x C-o" #'cp/copy-buffer-to-other-window)
+(map! "C-x O" #'cp/move-buffer-to-other-window)
 
 ;; TODO: convert the following to map! macros?
 ;;
@@ -980,6 +988,10 @@ Return an event vector."
 (after! go-ts-mode
   (setq auto-mode-alist (delete '("\\.go\\'" . go-ts-mode) auto-mode-alist)))
 
+;; Works at the end?
+(after! org
+  (with-eval-after-load 'org-faces
+    (set-face-attribute 'org-block nil :background "#2A3339")))
 
 (if (string-equal system-type "windows-nt")
     (progn
