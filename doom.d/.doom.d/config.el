@@ -89,6 +89,8 @@
 ;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
 ;; they are implemented.
 
+(add-load-path! "lisp")
+
 (setq!
         mac-command-modifier 'meta
         mac-option-modifier  'super
@@ -690,8 +692,6 @@ going through children."
 (map! "C-M-]" #'back-button-global-forward)
 (map! "M-{" #'back-button-local-backward)
 (map! "M-}" #'back-button-local-forward)
-(map! "C-M-{" #'back-button-local-backward)
-(map! "C-M-}" #'back-button-local-forward)
 
 ;; because those conflict in org-mode, backup
 (map! "C-c d" #'crux-duplicate-current-line-or-region)
@@ -796,11 +796,16 @@ going through children."
 ;; Dumb-jump for jai instead of using an ols
 ;;
 (use-package! dumb-jump
-  :config (progn
-            (setq dumb-jump-force-searcher 'rg)
-            (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
-  )
+  :ensure t
+  :custom
+  (dumb-jump-prefer-searcher 'rg)
+  ;; (xref-show-definitions-function #'xref-show-definitions-completing-read)
+  (xref-show-definitions-function #'consult-xref)
+  (dumb-jump-rg-search-args "--pcre2 --type-add 'jai:*.{jai}'")
 
+  :config
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+;;(setq dumb-jump-debug t)
 
 ;;
 ;; Org-novelist

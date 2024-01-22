@@ -68,4 +68,3 @@
 (package! idle-highlight-mode)
 (package! company-quickhelp)
 (package! smart-comment)
-(package! dumb-jump)
