@@ -423,6 +423,13 @@
 ;;   (set-face-attribute 'lsp-face-highlight-textual nil :foreground "#D6D6C6" :background "#464C43"))
 
 ;;
+;; Customize forestbones
+;;
+;;(set-face-attribute 'font-lock-comment-face nil :foreground "#586D36")
+;;(set-face-attribute 'font-lock-comment-face nil :foreground "#637B3D")
+(set-face-attribute 'font-lock-comment-face nil :foreground "#6E8943")
+
+;;
 ;; Custom functions
 ;;
 (defun isearch-with-region ()

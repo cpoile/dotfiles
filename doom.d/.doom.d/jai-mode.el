@@ -219,7 +219,7 @@
   (setq-local electric-indent-chars
               (append "{}():;," electric-indent-chars))
   (setq-local indent-tabs-mode t)
-  (setq-local tab-width 2)
+  (setq-local tab-width 4)
 
   ;; add indent functionality to some characters
   (jai--add-self-insert-hooks)

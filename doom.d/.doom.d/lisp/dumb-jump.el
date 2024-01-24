@@ -1171,6 +1171,12 @@ or most optimal searcher."
              "test := somefunc();"
              "test: sometype;"))
 
+    ;; structs
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "jai"
+     :regex "^\\s*\\bJJJ\\s*::\\s*\\bstruct\\s*{"
+     :tests ("Rectangle :: struct {"
+             "Rectangle :: struct {  // with some comments"))
+
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "jai"
      :regex "^\\s*\\bJJJ\\s*::\\s*\\\(.*\\\).*{"
      :tests ("strings :: () {"
