@@ -1164,24 +1164,34 @@ or most optimal searcher."
 
         ;; jai
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "jai"
-     :regex "^\\s*\\bJJJ\\s*:[ :=].*;"
+     :regex "\\bJJJ\\s*:.*;"
      :tests ("test : 1234;"
              "test :: 1234;"
              "test : int : 1234;"
+             "test : [N] int;"
              "test := somefunc();"
              "test: sometype;"))
 
     ;; structs
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "jai"
      :regex "^\\s*\\bJJJ\\s*::\\s*\\bstruct\\s*{"
-     :tests ("Rectangle :: struct {"
-             "Rectangle :: struct {  // with some comments"))
+     :tests ("test :: struct {"
+             "test :: struct {  // with some comments"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "jai"
      :regex "^\\s*\\bJJJ\\s*::\\s*\\\(.*\\\).*{"
-     :tests ("strings :: () {"
-             "strings_2 :: (x: int, y: int)   {"
-             "strings_3 :: (x: int, y: int) -> bytes: int {"))
+     :tests ("test :: () {"
+             "test :: (x: int, y: int)   {"
+             "test :: (x: int, y: int) -> bytes: int {"
+             "test::(x: int, y: int) -> (bytes: int, bytes2: int) {"))
+
+    ;; variable in fn signature
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "jai"
+           :regex "\\b.+\\s*::\\s*\\\((.+,\\s+)?JJJ:\\s*[^=\\n]+\\s*(,\\s*.+)*\\\).*{"
+           :tests ("varargs_strings :: (test: int = 42, names: .. string) {"
+                   "varargs_strings::(i:int = 42, test:..string) {"
+                   "varargs_strings::(i:int = 42, test:..string) -> int {"))
+
 
     ;; rust
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "rust"

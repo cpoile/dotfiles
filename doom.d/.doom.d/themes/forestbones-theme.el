@@ -84,7 +84,7 @@ Can be an integer to determine the exact padding."
    (cyan       '("#7DD093" "#46D9FF" "brightcyan"   ))
    (dark-cyan  '("#83C193" "#5699AF" "cyan"         ))
 
-   ;; syntax colors
+   ;; syntax colors -- these don't seem to be working...?
    (dark-fg '("#ADA28B" "#99bb66" "green")) ;; first is themed, second two are default
    (dark-green '("#a7c080" "#99bb66" "green")) ;; first is themed, second two are default
    (comment '("#6E7B85" "#7FBCB4" "dark-blue")) ;; first is themed, second two are default

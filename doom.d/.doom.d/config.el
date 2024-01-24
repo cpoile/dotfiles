@@ -423,13 +423,6 @@
 ;;   (set-face-attribute 'lsp-face-highlight-textual nil :foreground "#D6D6C6" :background "#464C43"))
 
 ;;
-;; Customize forestbones
-;;
-;;(set-face-attribute 'font-lock-comment-face nil :foreground "#586D36")
-;;(set-face-attribute 'font-lock-comment-face nil :foreground "#637B3D")
-(set-face-attribute 'font-lock-comment-face nil :foreground "#6E8943")
-
-;;
 ;; Custom functions
 ;;
 (defun isearch-with-region ()
@@ -720,6 +713,9 @@ going through children."
 ;; (global-set-key (kbd "C-o") '+default/newline-above)
 ;; (global-set-key (kbd "C-S-o") 'open-line)
 
+;; this was getting pressed by accident when hitting C-x o quickly:
+(global-set-key (kbd "C-x M-o") 'other-window)
+
 ;; Because pressing esc key was bringing up the esc map, and esc again was global-back
 (global-set-key (kbd "<escape>") 'doom/escape)
 
@@ -1004,6 +1000,13 @@ Return an event vector."
 (after! org
   (with-eval-after-load 'org-faces
     (set-face-attribute 'org-block nil :background "#2A3339")))
+
+;;
+;; Customize forestbones
+;;
+;;(set-face-attribute 'font-lock-comment-face nil :foreground "#586D36")
+;;(set-face-attribute 'font-lock-comment-face nil :foreground "#637B3D")
+(set-face-attribute 'font-lock-comment-face nil :foreground "#6E8943")
 
 (if (string-equal system-type "windows-nt")
     (progn
