@@ -1,0 +1,341 @@
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# If you come from bash you might have to change your $PATH.
+# export PATH=$HOME/bin:/usr/local/bin:$PATH
+
+# Path to your oh-my-zsh installation.
+export ZSH="$HOME/.oh-my-zsh"
+
+# Set name of the theme to load --- if set to "random", it will
+# load a random theme each time oh-my-zsh is loaded, in which case,
+# to know which specific one was loaded, run: echo $RANDOM_THEME
+# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
+ZSH_THEME="powerlevel10k/powerlevel10k"
+
+# Set list of themes to pick from when loading at random
+# Setting this variable when ZSH_THEME=random will cause zsh to load
+# a theme from this variable instead of looking in $ZSH/themes/
+# If set to an empty array, this variable will have no effect.
+# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
+
+# Uncomment the following line to use case-sensitive completion.
+# CASE_SENSITIVE="true"
+
+# Uncomment the following line to use hyphen-insensitive completion.
+# Case-sensitive completion must be off. _ and - will be interchangeable.
+HYPHEN_INSENSITIVE="true"
+
+# Uncomment one of the following lines to change the auto-update behavior
+# zstyle ':omz:update' mode disabled  # disable automatic updates
+# zstyle ':omz:update' mode auto      # update automatically without asking
+zstyle ':omz:update' mode reminder  # just remind me to update when it's time
+
+# Uncomment the following line to change how often to auto-update (in days).
+# zstyle ':omz:update' frequency 13
+
+# Uncomment the following line if pasting URLs and other text is messed up.
+# DISABLE_MAGIC_FUNCTIONS="true"
+
+# Uncomment the following line to disable colors in ls.
+# DISABLE_LS_COLORS="true"
+
+# Uncomment the following line to disable auto-setting terminal title.
+# DISABLE_AUTO_TITLE="true"
+
+# Uncomment the following line to enable command auto-correction.
+#ENABLE_CORRECTION="true"
+
+# Uncomment the following line to display red dots whilst waiting for completion.
+# You can also set it to another string to have that shown instead of the default red dots.
+# e.g. COMPLETION_WAITING_DOTS="%F{yellow}waiting...%f"
+# Caution: this setting can cause issues with multiline prompts in zsh < 5.7.1 (see #5765)
+# COMPLETION_WAITING_DOTS="true"
+
+# Uncomment the following line if you want to disable marking untracked files
+# under VCS as dirty. This makes repository status check for large repositories
+# much, much faster.
+# DISABLE_UNTRACKED_FILES_DIRTY="true"
+
+# Uncomment the following line if you want to change the command execution time
+# stamp shown in the history command output.
+# You can set one of the optional three formats:
+# "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
+# or set a custom format using the strftime function format specifications,
+# see 'man strftime' for details.
+# HIST_STAMPS="mm/dd/yyyy"
+
+# Would you like to use another custom folder than $ZSH/custom?
+# ZSH_CUSTOM=/path/to/new-custom-folder
+
+# Which plugins would you like to load?
+# Standard plugins can be found in $ZSH/plugins/
+# Custom plugins may be added to $ZSH_CUSTOM/plugins/
+# Example format: plugins=(rails git textmate ruby lighthouse)
+# Add wisely, as too many plugins slow down shell startup.
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
+
+source $ZSH/oh-my-zsh.sh
+
+# User configuration
+
+# export MANPATH="/usr/local/man:$MANPATH"
+
+# You may need to manually set your language environment
+# export LANG=en_US.UTF-8
+
+# Preferred editor for local and remote sessions
+# if [[ -n $SSH_CONNECTION ]]; then
+#   export EDITOR='vim'
+# else
+#   export EDITOR='mvim'
+# fi
+
+# Compilation flags
+# export ARCHFLAGS="-arch x86_64"
+
+# Set personal aliases, overriding those provided by oh-my-zsh libs,
+# plugins, and themes. Aliases can be placed here, though oh-my-zsh
+# users are encouraged to define aliases within the ZSH_CUSTOM folder.
+# For a full list of active aliases, run `alias`.
+#
+# Example aliases
+# alias zshconfig="mate ~/.zshrc"
+# alias ohmyzsh="mate ~/.oh-my-zsh"
+
+##
+## Settings for mac dev machine
+##
+if [[ $OSTYPE == darwin* ]]; then
+
+  ##
+  ## MM functions
+  ##
+  alias mtc='make test && make check-style && make i18n-extract'
+  alias ntc='cd webapp && npm run check-types && npm run test && cd ..'
+  alias mc='make check-style'
+  alias mi='make i18n-extract'
+  alias mw='MM_SERVICESETTINGS_ENABLEDEVELOPER=true MM_DEBUG=true make watch'
+  alias md='MM_SERVICESETTINGS_ENABLEDEVELOPER=true MM_DEBUG=true make deploy'
+
+  function mm-mysql {
+      docker exec -ti mattermost-mysql bash -c 'mysql mattermost_test -u mmuser -p'
+  }
+
+  function mm-mysql-root {
+      docker exec -ti mattermost-mysql bash -c 'mysql -u root -p'
+  }
+
+  function mm-psql {
+      docker exec -ti mattermost-postgres bash -c 'psql mattermost_test -U mmuser'
+  }
+
+  function start-pg-gorptest {
+      docker run --name pg-docker -e POSTGRES_PASSWORD=gorptest -e POSTGRES_DB=gorptest -e POSTGRES_USER=gorptest -d -p 5432:5432 circleci/postgres:11.2-alpine
+  }
+
+  function export-pg-env {
+      export DB_HOST="localhost"
+      export DB_PORT_NUMBER="5432"
+      export MM_DBNAME="mattermost_test"
+      export MM_USERNAME="mmuser"
+      export MM_PASSWORD="mostest"
+      export MM_SQLSETTINGS_DATASOURCE="postgres://mmuser:mostest@localhost:5432/mattermost_test?sslmode=disable&connect_timeout=10"
+      export MM_SQLSETTINGS_DRIVERNAME="postgres"
+  }
+
+  function mm-create-mysql {
+      mysql -uroot -pmostest -e "CREATE DATABASE mattermost_test;"
+      mysql -uroot -pmostest -e "CREATE USER 'mmuser' IDENTIFIED BY 'mostest';"
+      mysql -uroot -pmostest -e "GRANT ALL PRIVILEGES ON *.* TO 'mmuser';"
+      mysql -uroot -pmostest -e "FLUSH PRIVILEGES;"
+  }
+
+  function mm-nuke-mysql {
+      mysql -uroot -pmostest -e "show databases" | egrep -v "Database|mysql|information_schema|performance_schema|sys" | gawk '{print "drop database `" $1 "`;select sleep(0.01);"}' | mysql -uroot -pmostest
+      mysql -uroot -pmostest -e "DROP USER 'mmuser';"
+  }
+
+  function mm-create-postgres {
+      psql postgres -c "create database mattermost_test;"
+      psql postgres -c "create user mmuser superuser password 'mostest';"
+      psql postgres -c "ALTER USER mmuser CREATEDB;"
+  }
+
+  function mm-nuke-postgres {
+      ~/bin/nuke-postgres.sh
+      mm-create-postgres
+  }
+
+  function mm-setup {
+      ./bin/mmctl --local sampledata
+      ./bin/mmctl --local license upload ./dev-enterprise.mattermost-license
+      ./bin/mmctl --local user create --username sysadmin --email cpoile+10@gmail.com --firstname sys --lastname admin --password 'Sys@dmin-sample1' --system-admin
+      ./bin/mmctl --local user create --username sysadmin --email cpoile+11@gmail.com --firstname user1 --lastname one --password 'SampleUs@r-1'
+      ./bin/mmctl --local user create --username chris --email cpoile@gmail.com --firstname Chris --lastname Poile --password 'Testtest1!' --system-admin
+      ./bin/mmctl --local user create --username chrism --email cpoile+4@gmail.com --firstname Chris Mobile --lastname Poile --password 'Testtest1!'
+      ./bin/mmctl --local user create --username jon --email cpoile+1@gmail.com --firstname Jon --lastname Woodco --password 'Testtest1!'
+      ./bin/mmctl --local user create --username jonm --email cpoile+5@gmail.com --firstname Jon --lastname Woodco --password 'Testtest1!'
+      ./bin/mmctl --local user create --username Andrew --email cpoile+2@gmail.com --firstname Andrew --lastname Carson --password 'Testtest1!'
+      ./bin/mmctl --local user create --username Andrewm --email cpoile+9@gmail.com --firstname AndrewMobile --lastname Carson --password 'Testtest1!'
+      ./bin/mmctl --local user create --username Matt --email cpoile+3@gmail.com --password 'Testtest1!'
+      ./bin/mmctl --local user create --username mattm --email cpoile+8@gmail.com --firstname Matt Mobile --lastname Poile --password 'Testtest1!'
+      ./bin/mmctl --local user create --username Bob --email cpoile+6@gmail.com --password 'Testtest1!' --firstname Bob --lastname Glover
+      ./bin/mmctl --local user create --username Bobm --email cpoile+14@gmail.com --password 'Testtest1!' --firstname Bob --lastname Glover
+      ./bin/mmctl --local user create --username Tasha --email cpoile+7@gmail.com --password 'Testtest1!' --firstname Tasha --lastname Glover
+      ./bin/mmctl --local user create --username long --email cpoile+12@gmail.com --password 'Testtest1!' --firstname AVeryVeryVeryLongFirstNameThisIsTooLong --lastname AVeryVeryVeryLongLastName
+      ./bin/mmctl --local team users add ad-1 jon jonm chris chrism andrew andrewm matt mattm bob tasha sysadmin user-1 samuel.tucker bobm
+      ./bin/mmctl --local team create --name testteam --display-name "Test Team"
+      ./bin/mmctl --local team users add testteam jon jonm chris chrism andrew andrewm matt mattm bob tasha sysadmin user-1 samuel.tucker
+  }
+
+  # Need to have logged in with admin/admin
+  function mm-setup-docker {
+      ./bin/mmctl auth login http://localhost:8065
+      ./bin/mmctl sampledata
+      ./bin/mmctl license upload ./dev-enterprise.mattermost-license
+      ./bin/mmctl user create --username sysadmin --email cpoile+10@gmail.com --firstname sys --lastname admin --password 'Sys@dmin-sample1' --system-admin
+      ./bin/mmctl user create --username sysadmin --email cpoile+11@gmail.com --firstname user1 --lastname one --password 'SampleUs@r-1'
+      ./bin/mmctl user create --username chris --email cpoile@gmail.com --firstname Chris --lastname Poile --password 'Testtest1!' --system-admin
+      ./bin/mmctl user create --username chrism --email cpoile+4@gmail.com --firstname Chris Mobile --lastname Poile --password 'Testtest1!'
+      ./bin/mmctl user create --username jon --email cpoile+1@gmail.com --firstname Jon --lastname Woodco --password 'Testtest1!'
+      ./bin/mmctl user create --username jonm --email cpoile+5@gmail.com --firstname Jon --lastname Woodco --password 'Testtest1!'
+      ./bin/mmctl user create --username Andrew --email cpoile+2@gmail.com --firstname Andrew --lastname Carson --password 'Testtest1!'
+      ./bin/mmctl user create --username Andrewm --email cpoile+9@gmail.com --firstname AndrewMobile --lastname Carson --password 'Testtest1!'
+      ./bin/mmctl user create --username Matt --email cpoile+3@gmail.com --password 'Testtest1!'
+      ./bin/mmctl user create --username mattm --email cpoile+8@gmail.com --firstname Matt Mobile --lastname Poile --password 'Testtest1!'
+      ./bin/mmctl user create --username Bob --email cpoile+6@gmail.com --password 'Testtest1!' --firstname Bob --lastname Glover
+      ./bin/mmctl user create --username Bobm --email cpoile+14@gmail.com --password 'Testtest1!' --firstname Bob --lastname Glover
+      ./bin/mmctl user create --username Tasha --email cpoile+7@gmail.com --password 'Testtest1!' --firstname Tasha --lastname Glover
+      ./bin/mmctl user create --username long --email cpoile+12@gmail.com --password 'Testtest1!' --firstname AVeryVeryVeryLongFirstNameThisIsTooLong --lastname AVeryVeryVeryLongLastName
+      ./bin/mmctl team users add ad-1 jon jonm chris chrism andrew andrewm matt mattm bob tasha sysadmin user-1 samuel.tucker bobm
+      ./bin/mmctl team create --name testteam --display-name "Test Team"
+      ./bin/mmctl team users add testteam jon jonm chris chrism andrew andrewm matt mattm bob tasha sysadmin user-1 samuel.tucker
+  }
+
+
+  function mm-build-test {
+      DEBUG= MM_DEBUG= MM_RUDDER_DATAPLANE_URL=https://pdat.matterlytics.com MM_RUDDER_WRITE_KEY=(1pass RUDDER_WRITE_KEY) make dist
+  }
+
+  function mm-rudder-keys-set {
+      export MM_RUDDER_DATAPLANE_URL="https://pdat.matterlytics.com"
+      export MM_RUDDER_WRITE_KEY=(1pass RUDDER_WRITE_KEY)
+      export RUDDER_DATAPLANE_URL="https://pdat.matterlytics.com"
+      export RUDDER_KEY=(1pass RUDDER_WRITE_KEY)
+  }
+
+  function mm-rudder-keys-unset {
+      unset MM_RUDDER_DATAPLANE_URL
+      unset MM_RUDDER_WRITE_KEY
+      unset RUDDER_DATAPLANE_URL
+      unset RUDDER_KEY
+  }
+
+  export MM_SERVER_PATH="/Users/chris/go/src/github.com/mattermost/server/server"
+  ulimit -n 8096
+
+  export ANDROID_HOME="$HOME/Library/Android/sdk"
+  export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$PATH"
+
+
+  export GPG_TTY=$TTY
+  export JENV_ROOT="/usr/local/Cellar/jenv/"
+  export GOBIN="/Users/chris/bin"
+
+  if which jenv > /dev/null;
+      then eval "$(jenv init -)";
+  fi
+
+  # Add default node to path
+  export PATH=~/.nvm/versions/node/v18.17.1/bin:$PATH
+
+  # Load NVM
+  export NVM_DIR=~/.nvm
+  [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh" --no-use
+
+  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+  export PATH="/opt/homebrew/opt/mysql@5.7/bin:$PATH"
+  export PATH="/opt/homebrew/opt/postgresql@14/bin:$PATH"
+  export PATH="~/Library/Python/3.8/bin:$PATH"
+  export PATH="/Users/chris/bin:$PATH"
+  export PATH="/Users/chris/go/bin:$PATH"
+
+  [[ -s "/Users/chris/.gvm/scripts/gvm" ]] && source "/Users/chris/.gvm/scripts/gvm"
+
+  alias emacs='open -a /Applications/Emacs.app $1'
+  alias em='open -a /Applications/Emacs.app $1'
+  alias ec='/opt/homebrew/bin/emacsclient -nw'
+
+  function rsync-to-cpoile() {
+    if [[ -z "$1" ]]; then
+        echo "need a directory off mattermost-mobile/node_modules/ e.g.: rsync-to-cpoile react-native-incall-manager"
+        return 0
+    fi
+    rsync -aE "$HOME/go/src/github.com/mattermost/mattermost-mobile/node_modules/$1" "$HOME/go/src/github.com/cpoile"
+  }
+
+  function rsync-to-mobile() {
+    if [[ -z "$1" ]]; then
+        echo "need a directory off cpoile/ e.g.: rsync-to-mobile react-native-incall-manager"
+        return 0
+    fi
+    rsync -aE --delete --exclude={'.git','.idea'} "$HOME/go/src/github.com/cpoile/$1" "$HOME/go/src/github.com/mattermost/mattermost-mobile/node_modules"
+  }
+
+  export PATH="/opt/homebrew/opt/llvm@14/bin:$HOME/dev/odin/Odin:/Library/TeX/texbin:$PATH"
+  alias odin='LDFLAGS="-L/opt/homebrew/opt/llvm/lib" CPPFLAGS="-I/opt/homebrew/opt/llvm/include" odin'
+  export ODIN_ROOT="$HOME/dev/odin/Odin"
+
+  export CXX="/Users/chris/bin/cc"
+
+  ## to fix the doom sync warnings about vertico's grep:
+  if [ -d "$(brew --prefix)/opt/grep/libexec/gnubin" ]; then
+    PATH="$(brew --prefix)/opt/grep/libexec/gnubin:$PATH"
+  fi
+
+  # Add rbenv to PATH for scripting. Make sure this is the last PATH variable change.
+  eval "$(rbenv init -)"
+fi
+
+##
+## UBUNTU
+##
+
+if [[ $OSTYPE == linux* ]]; then
+  export TERM=xterm-24bit
+  export PATH="$HOME/bin:$PATH"
+fi
+
+
+##
+## Settings for both mac and linux
+##
+
+export PATH="$HOME/.emacs.d/bin:$PATH"
+export MYVIMRC=~/.config/nvim/init.lua
+export XDG_CONFIG_HOME="$HOME/.config"
+
+##
+## Aliases
+##
+alias lg='lazygit'
+alias ll='exa -lah'
+
+# so that ctrl-d doesn't close terminal
+set -o ignoreeof
+
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+autoload -U compinit; compinit
+
+test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+
+eval "$(zoxide init --cmd j zsh)"
+
+eval "$(atuin init zsh)"

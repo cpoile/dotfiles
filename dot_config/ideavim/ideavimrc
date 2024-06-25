@@ -1,0 +1,162 @@
+"" :actionlist <something> -- to search
+"" track action ids -- to display them
+
+let mapleader=" "
+
+"" Settings ====================================================================
+set scrolloff=10
+set scroll=20
+set relativenumber
+set number
+set visualbell
+set showmode
+set showcmd
+set hlsearch
+set ideajoin
+set incsearch
+set idearefactormode=keep
+
+" Searching is case insensitive, but if you search with a capital, prioritize that
+set ignorecase smartcase
+
+" arguments are text object: dia, cia, via
+set argtextobj
+let g:argtextobj_pairs="[:],(:),<:>"
+
+" Clipboard handling
+set clipboard=unnamed,unnamedplus
+set clipboard+=ideaput
+
+""
+"" Keybindings (use in nvim too) ===============================================
+""
+
+" Move highlighted text down, up
+vmap J :m '>+1<CR>gv==kgvo<esc>=kgvo
+vmap K :m '<-2<CR>gv==jgvo<esc>=jgvo
+
+" Helix has great interactive mode keybindings:
+inoremap <C-d>  <C-o>x
+inoremap <D-d>  <C-o>dw
+inoremap <C-k>  <C-o>d$<right>
+nmap     <c-p>  <Action>(ParameterInfo)
+
+" Clear search highlights
+nnoremap <c-l>  :noh<cr>
+
+" unimpaired mappings - from https://github.com/saaguero/ideavimrc/blob/master/.ideavimrc
+nmap [<space>  O<esc>j
+nmap ]<space>  o<esc>k
+
+" specific to ideavim, TODO: add ideavim if statement (and to other parts below)
+nmap ]c        <Action>(VcsShowNextChangeMarker)
+nmap [c        <Action>(VcsShowPrevChangeMarker)
+nmap ]d        <Action>(GotoNextError)
+nmap [d        <Action>(GotoPreviousError)
+map <C-o>      <Action>(Back)
+map <C-i>      <Action>(Forward)
+
+
+" Increase or decrease font size -- not working, so mapped in the ui
+" nmap <D-+> <Action>(EditorIncreaseFontSize)
+" nmap <D-_> <Action>(EditorDecreaseFontSize)
+
+" not sure how these two work:
+nmap [q <Action>(FindPrevious)
+nmap ]q <Action>(FindNext)
+
+" method movements
+nmap <D-e> <Action>(MethodDown)
+nmap <D-a> <Action>(MethodUp)
+
+" window movements
+nmap <C-w>m <Action>(MoveEditorToOppositeTabGroup)
+nmap <C-w>x <Action>(MoveEditorToOppositeTabGroup) \| <Action>(PreviousTab) \| <Action>(MoveEditorToOppositeTabGroup)
+nmap <C-w>c <Action>(OpenEditorInOppositeTabGroup)
+nmap <C-w>L <Action>(MoveEditorToOppositeTabGroup)
+nmap <C-w>H <Action>(MoveEditorToOppositeTabGroup)
+
+""
+"" PLUGINS =====================================================================
+""
+
+set NERDTree
+set sneak
+set surround
+set commentary
+set which-key
+set highlightedyank
+let g:WhichKey_ShowVimActions = "true"
+let g:WhichKeyDesc_git        = "<Space>g  [g]it actions"
+let g:WhichKeyDesc_code       = "<Space>c  [c]ode (or [c]ustom) actions"
+let g:WhichKeyDesc_search     = "<Space>s  [s]earch"
+let g:WhichKeyDesc_refactor   = "<Space>r  [r]efactor"
+let g:WhichKeyDesc_debugging  = "<Space>d  [d]ebugging"
+let g:WhichKeyDesc_quitting   = "<Space>q  [q]uitting"
+
+" replace with register:
+"   [count]["x]gr{motion} Replace {motion} text with the contents of register x.
+"   [count]["x]grr        Replace [count] lines with the contents of register x.
+"   ["x]gr$               Replace from the cursor position to the end of the line.
+"   {Visual}["x]gr        Replace the selection with the contents of register x.
+set ReplaceWithRegister
+
+" exchange (mnemonic: eX-Change):
+"   cx   First usage: define the {motion} to exchange. Second usage: define the second and exchange.
+"   cxx  Like cx but for the whole line.
+"   X    Like cx for visual model
+"   cxc  Clear motion pending for change
+set exchange
+
+" matchit help: https://github.com/adelarsq/vim-matchit/blob/master/doc/matchit.txt
+set matchit
+
+" disable the timeout option 100
+set notimeout
+
+""
+"" LEADER menus ================================================================
+""
+" top level <Leader> commands
+map <Leader><Leader>  <Action>(RecentFiles)
+map <Leader>b         <Action>(RecentFiles)
+map <Leader>L         <Action>(RecentLocations)
+map <Leader>p         <Action>(PasteMultiple)
+map <Leader>z         <Action>(ToggleDistractionFreeMode)
+map <Leader>f         <Action>(ReformatCode)
+map <Leader>/         <Action>(FindInPath)
+" not a leader command, but goes with the above
+map <C-s>            <Action>(FrameSwitchAction)
+
+" Search -- <leader>s
+map <Leader>sf <Action>(GotoFile)
+map <Leader>ss <Action>(GotoSymbol)
+map <Leader>sc <Action>(GotoClass)
+map <Leader>sa <Action>(GotoAction)
+map <Leader>sg <Action>(FindInPath)
+
+"" Git -- <leader>g
+map <Leader>gr <Action>(Vcs.RollbackChangedLines)
+map <Leader>gb <Action>(Git.Branches)
+map <Leader>gv <Action>(Vcs.Operations.Popup)
+map <Leader>gc <Action>(CheckinProject)
+map <Leader>gP <Action>(Vcs.Push)
+map <Leader>gl <Action>(Vcs.Show.Log)
+map <Leader>gd <Action>(Compare.LastVersion)
+map <Leader>gB <Action>(Annotate)
+
+"" Code/Custom actions -- <Leader>c
+map <Leader>cd        <Action>(EditorDuplicate)
+map <Leader>c<space>  <Action>(com.gitlab.lae.intellij.actions.OneSpace)
+
+"" Refactor
+map <Leader>rt <Action>(Refactorings.QuickListPopupAction)
+map <Leader>rn <Action>(RenameElement)
+map <Leader>rg <Action>(Generate)
+
+"" Debugging -- <Leader>d
+map <leader>d<space>  <Action>(ToggleLineBreakpoint)
+map <leader>db        <Action>(ViewBreakpoints)
+
+"" Quitting -- <Leader>q
+map <Leader>qa <Action>(CloseProject)
