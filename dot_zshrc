@@ -89,11 +89,11 @@ source $ZSH/oh-my-zsh.sh
 # export LANG=en_US.UTF-8
 
 # Preferred editor for local and remote sessions
-# if [[ -n $SSH_CONNECTION ]]; then
-#   export EDITOR='vim'
-# else
-#   export EDITOR='mvim'
-# fi
+if [[ -n $SSH_CONNECTION ]]; then
+  export EDITOR='vim'
+else
+  export EDITOR='myemacs'
+fi
 
 # Compilation flags
 # export ARCHFLAGS="-arch x86_64"
@@ -271,6 +271,7 @@ if [[ $OSTYPE == darwin* ]]; then
   alias emacs='open -a /Applications/Emacs.app $1'
   alias em='open -a /Applications/Emacs.app $1'
   alias ec='/opt/homebrew/bin/emacsclient -nw'
+  alias cm='chezmoi'
 
   function rsync-to-cpoile() {
     if [[ -z "$1" ]]; then
@@ -301,6 +302,8 @@ if [[ $OSTYPE == darwin* ]]; then
 
   # Add rbenv to PATH for scripting. Make sure this is the last PATH variable change.
   eval "$(rbenv init -)"
+
+  test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 fi
 
 ##
@@ -309,7 +312,7 @@ fi
 
 if [[ $OSTYPE == linux* ]]; then
   export TERM=xterm-24bit
-  export PATH="$HOME/bin:$PATH"
+  export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
 fi
 
 
@@ -325,7 +328,10 @@ export XDG_CONFIG_HOME="$HOME/.config"
 ## Aliases
 ##
 alias lg='lazygit'
-alias ll='exa -lah'
+alias ll='eza -lah'
+alias ec='emacsclient -nw'
+alias cm='chezmoi'
+alias cmp='chezmoi git pull -- --autostash --rebase && chezmoi diff'
 
 # so that ctrl-d doesn't close terminal
 set -o ignoreeof
@@ -334,8 +340,16 @@ set -o ignoreeof
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 autoload -U compinit; compinit
 
-test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
-
 eval "$(zoxide init --cmd j zsh)"
 
+. "$HOME/.atuin/bin/env"
 eval "$(atuin init zsh)"
+
+. "$HOME/.cargo/env"
+
+# Added by Toolbox App
+export PATH="$PATH:/home/chris/.local/share/JetBrains/Toolbox/scripts"
+
+export NVM_DIR="$HOME/.config/nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion

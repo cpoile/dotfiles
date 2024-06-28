@@ -29,6 +29,10 @@
     (progn
       (setq doom-font (font-spec :family "JetBrains Mono" :size 16 :weight 'Light))))
 
+(if (string-equal system-type "gnu/linux")
+    (progn
+      (setq doom-font (font-spec :family "JetBrains Mono" :size 20))))
+
 (setq line-spacing 0)
 
 ;;
