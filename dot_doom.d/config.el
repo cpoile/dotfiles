@@ -95,6 +95,10 @@
 
 (add-load-path! "lisp")
 
+(if (string-equal system-type "gnu/linux")
+    (progn
+      (setq x-alt-keysym 'meta)))
+
 (setq!
         mac-command-modifier 'meta
         mac-option-modifier  'super
