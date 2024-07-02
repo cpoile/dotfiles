@@ -717,7 +717,7 @@ going through children."
 (global-set-key (kbd "C-k") 'kill-visual-line)
 (global-set-key (kbd "M-Z") 'zap-to-char)
 (global-set-key (kbd "M-z") 'zap-up-to-char)
-(global-set-key (kbd "M-<return>") '+default/newline-above)
+;;(global-set-key (kbd "M-<return>") '+default/newline-above)
 ;; (global-set-key (kbd "C-o") '+default/newline-above)
 ;; (global-set-key (kbd "C-S-o") 'open-line)
 
