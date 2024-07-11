@@ -1,0 +1,20 @@
+# Copy & Paste
+set -g mode-keys emacs
+bind-key [ copy-mode
+bind-key -T copy-mode Space send-keys -X begin-selection
+bind-key -T copy-mode M-w   send-keys -X copy-pipe-and-cancel "pbcopy"
+bind-key -T copy-mode C-g   send-keys -X send-keys -X cancel
+
+# Copy tmux buffer to X clipboard
+# run -b runs a shell command in background
+# bind C-w run -b "tmux show-buffer | xclip -selection clipboard -i"
+bind C-w run -b "tmux show-buffer | pbcopy"
+
+# Paste from X clipboard into tmux; also replace newline characters with
+# space characters when pasting
+bind C-y run -b "exec </dev/null; pbpaste | awk 1 ORS=' ' | tmux load-buffer - ; tmux paste-buffer"
+# Same as `C-y' binding except that the newline chars are not replaced with space
+bind Y run -b "exec </dev/null; pbpaste | tmux load-buffer - ; tmux paste-buffer"
+
+# then allow:
+set -g allow-passthrough on
