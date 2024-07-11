@@ -93,6 +93,7 @@ if [[ -n $SSH_CONNECTION ]]; then
   export EDITOR='vim'
 else
   export EDITOR='myemacs'
+  export SUDO_EDITOR='myemacs'
 fi
 
 # Compilation flags
@@ -111,16 +112,6 @@ fi
 ## Settings for mac dev machine
 ##
 if [[ $OSTYPE == darwin* ]]; then
-
-  ##
-  ## MM functions
-  ##
-  alias mtc='make test && make check-style && make i18n-extract'
-  alias ntc='cd webapp && npm run check-types && npm run test && cd ..'
-  alias mc='make check-style'
-  alias mi='make i18n-extract'
-  alias mw='MM_SERVICESETTINGS_ENABLEDEVELOPER=true MM_DEBUG=true make watch'
-  alias md='MM_SERVICESETTINGS_ENABLEDEVELOPER=true MM_DEBUG=true make deploy'
 
   function mm-mysql {
       docker exec -ti mattermost-mysql bash -c 'mysql mattermost_test -u mmuser -p'
@@ -169,28 +160,6 @@ if [[ $OSTYPE == darwin* ]]; then
   function mm-nuke-postgres {
       ~/bin/nuke-postgres.sh
       mm-create-postgres
-  }
-
-  function mm-setup {
-      ./bin/mmctl --local sampledata
-      ./bin/mmctl --local license upload ./dev-enterprise.mattermost-license
-      ./bin/mmctl --local user create --username sysadmin --email cpoile+10@gmail.com --firstname sys --lastname admin --password 'Sys@dmin-sample1' --system-admin
-      ./bin/mmctl --local user create --username sysadmin --email cpoile+11@gmail.com --firstname user1 --lastname one --password 'SampleUs@r-1'
-      ./bin/mmctl --local user create --username chris --email cpoile@gmail.com --firstname Chris --lastname Poile --password 'Testtest1!' --system-admin
-      ./bin/mmctl --local user create --username chrism --email cpoile+4@gmail.com --firstname Chris Mobile --lastname Poile --password 'Testtest1!'
-      ./bin/mmctl --local user create --username jon --email cpoile+1@gmail.com --firstname Jon --lastname Woodco --password 'Testtest1!'
-      ./bin/mmctl --local user create --username jonm --email cpoile+5@gmail.com --firstname Jon --lastname Woodco --password 'Testtest1!'
-      ./bin/mmctl --local user create --username Andrew --email cpoile+2@gmail.com --firstname Andrew --lastname Carson --password 'Testtest1!'
-      ./bin/mmctl --local user create --username Andrewm --email cpoile+9@gmail.com --firstname AndrewMobile --lastname Carson --password 'Testtest1!'
-      ./bin/mmctl --local user create --username Matt --email cpoile+3@gmail.com --password 'Testtest1!'
-      ./bin/mmctl --local user create --username mattm --email cpoile+8@gmail.com --firstname Matt Mobile --lastname Poile --password 'Testtest1!'
-      ./bin/mmctl --local user create --username Bob --email cpoile+6@gmail.com --password 'Testtest1!' --firstname Bob --lastname Glover
-      ./bin/mmctl --local user create --username Bobm --email cpoile+14@gmail.com --password 'Testtest1!' --firstname Bob --lastname Glover
-      ./bin/mmctl --local user create --username Tasha --email cpoile+7@gmail.com --password 'Testtest1!' --firstname Tasha --lastname Glover
-      ./bin/mmctl --local user create --username long --email cpoile+12@gmail.com --password 'Testtest1!' --firstname AVeryVeryVeryLongFirstNameThisIsTooLong --lastname AVeryVeryVeryLongLastName
-      ./bin/mmctl --local team users add ad-1 jon jonm chris chrism andrew andrewm matt mattm bob tasha sysadmin user-1 samuel.tucker bobm
-      ./bin/mmctl --local team create --name testteam --display-name "Test Team"
-      ./bin/mmctl --local team users add testteam jon jonm chris chrism andrew andrewm matt mattm bob tasha sysadmin user-1 samuel.tucker
   }
 
   # Need to have logged in with admin/admin
@@ -305,6 +274,39 @@ if [[ $OSTYPE == darwin* ]]; then
 
   test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 fi
+
+##
+## WORK
+##
+
+alias mtc='make test && make check-style && make i18n-extract'
+alias ntc='cd webapp && npm run check-types && npm run test && cd ..'
+alias mc='make check-style'
+alias mi='make i18n-extract'
+alias mw='MM_SERVICESETTINGS_ENABLEDEVELOPER=true MM_DEBUG=true make watch'
+alias md='MM_SERVICESETTINGS_ENABLEDEVELOPER=true MM_DEBUG=true make deploy'
+
+function mm-setup {
+  ./bin/mmctl --local sampledata
+  ./bin/mmctl --local license upload ./dev-enterprise.mattermost-license
+  ./bin/mmctl --local user create --username sysadmin --email cpoile+10@gmail.com --firstname sys --lastname admin --password 'Sys@dmin-sample1' --system-admin
+  ./bin/mmctl --local user create --username sysadmin --email cpoile+11@gmail.com --firstname user1 --lastname one --password 'SampleUs@r-1'
+  ./bin/mmctl --local user create --username chris --email cpoile@gmail.com --firstname Chris --lastname Poile --password 'Testtest1!' --system-admin
+  ./bin/mmctl --local user create --username chrism --email cpoile+4@gmail.com --firstname Chris Mobile --lastname Poile --password 'Testtest1!'
+  ./bin/mmctl --local user create --username jon --email cpoile+1@gmail.com --firstname Jon --lastname Woodco --password 'Testtest1!'
+  ./bin/mmctl --local user create --username jonm --email cpoile+5@gmail.com --firstname Jon --lastname Woodco --password 'Testtest1!'
+  ./bin/mmctl --local user create --username Andrew --email cpoile+2@gmail.com --firstname Andrew --lastname Carson --password 'Testtest1!'
+  ./bin/mmctl --local user create --username Andrewm --email cpoile+9@gmail.com --firstname AndrewMobile --lastname Carson --password 'Testtest1!'
+  ./bin/mmctl --local user create --username Matt --email cpoile+3@gmail.com --password 'Testtest1!'
+  ./bin/mmctl --local user create --username mattm --email cpoile+8@gmail.com --firstname Matt Mobile --lastname Poile --password 'Testtest1!'
+  ./bin/mmctl --local user create --username Bob --email cpoile+6@gmail.com --password 'Testtest1!' --firstname Bob --lastname Glover
+  ./bin/mmctl --local user create --username Bobm --email cpoile+14@gmail.com --password 'Testtest1!' --firstname Bob --lastname Glover
+  ./bin/mmctl --local user create --username Tasha --email cpoile+7@gmail.com --password 'Testtest1!' --firstname Tasha --lastname Glover
+  ./bin/mmctl --local user create --username long --email cpoile+12@gmail.com --password 'Testtest1!' --firstname AVeryVeryVeryLongFirstNameThisIsTooLong --lastname AVeryVeryVeryLongLastName
+  ./bin/mmctl --local team users add ad-1 jon jonm chris chrism andrew andrewm matt mattm bob tasha sysadmin user-1 samuel.tucker bobm
+  ./bin/mmctl --local team create --name testteam --display-name "Test Team"
+  ./bin/mmctl --local team users add testteam jon jonm chris chrism andrew andrewm matt mattm bob tasha sysadmin user-1 samuel.tucker
+}
 
 ##
 ## UBUNTU

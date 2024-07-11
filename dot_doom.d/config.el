@@ -31,7 +31,7 @@
 
 (if (string-equal system-type "gnu/linux")
     (progn
-      (setq doom-font (font-spec :family "JetBrains Mono" :size 20))))
+      (setq doom-font (font-spec :family "JetBrains Mono" :size 21))))
 
 (setq line-spacing 0)
 
@@ -657,7 +657,9 @@ going through children."
 ;; turn of company mode by default. If you want to turn it on in some modes,
 ;; see: https://emacs.stackexchange.com/questions/48871/how-to-enable-company-mode-for-some-buffers-only
 (after! company
-  (global-company-mode -1))
+  (global-company-mode -1)
+  (setq company-global-modes '(not org-mode)))
+
 
 ;; and make txt files use paragraph indents as the paragraph breaks.
 ;; TODO: this changes for everyone -- need to fix
@@ -674,6 +676,18 @@ going through children."
   (forward-char)
   (forward-paragraph (- arg 3)))
 
+(defun volatile-kill-buffer ()
+   "Kill current buffer unconditionally."
+   (interactive)
+   (let ((buffer-modified-p nil))
+     (kill-buffer (current-buffer))))
+
+(defun cp/frame-resize-init (&optional arg)
+  "set the frame size for editing using emacs chrome (it always starts too small)"
+  (when (display-graphic-p)
+    (set-frame-size arg 80 24)))
+
+(add-hook 'after-make-frame-functions 'cp/frame-resize-init)
 
 ;;
 ;; Keybindings
@@ -723,6 +737,8 @@ going through children."
 
 ;; Because pressing esc key was bringing up the esc map, and esc again was global-back
 (global-set-key (kbd "<escape>") 'doom/escape)
+;; Unconditionally kill unmodified buffers.
+(global-set-key (kbd "C-x k") 'volatile-kill-buffer)
 
 (after! org
   (map! :map org-mode-map "C-M-n" #'cp/org-next-visible-any-item-or-heading)
@@ -734,7 +750,7 @@ going through children."
   (map! :map org-mode-map "C-M-u" #'cp/org-up-immediate-heading)
   (map! :map org-mode-map "M-}" #'back-button-local-forward)
   (map! :map org-mode-map "M-{" #'back-button-local-backward)
-  (map! :map org-mode-map "C-o" #'+org/insert-item-above)
+  ;;(map! :map org-mode-map "C-o" #'+org/insert-item-above)
 
   ;; (map! :map org-mode-map "M-n" #'cp/org-next-visible-any-item-or-heading)
   ;; (map! :map org-mode-map "M-p" #'cp/org-prev-visible-any-item-or-heading)
@@ -1001,10 +1017,42 @@ Return an event vector."
 (after! go-ts-mode
   (setq auto-mode-alist (delete '("\\.go\\'" . go-ts-mode) auto-mode-alist)))
 
+
+;; Edit text areas in chrome with Ctrl-.
+(add-load-path! "~/.doom.d/websocket/")
+(add-load-path! "~/.doom.d/atomic-chrome/")
+(require 'atomic-chrome)
+(setq-default atomic-chrome-buffer-open-style 'frame)
+(setq-default atomic-chrome-auto-remove-file t)
+(setq atomic-chrome-buffer-frame-width 50)
+(setq atomic-chrome-buffer-frame-height 100)
+(setq-default atomic-chrome-url-major-mode-alist
+              '(("ramdajs.com" . js-ts-mode)
+                ("github.com" . gfm-mode)
+                ("gitlab.com" . gfm-mode)
+                ("leetcode.com" . typescript-ts-mode)
+                ("codesandbox.io" . js-ts-mode)
+                ("typescriptlang.org" . typescript-ts-mode)
+                ("jsfiddle.net" . js-ts-mode)
+                ("w3schools.com" . js-ts-mode)))
+(add-to-list 'atomic-chrome-create-file-strategy
+             '("~/repos/ts-scratch/src/" :extension
+               ("js" "ts" "tsx" "jsx" "cjs" "mjs")))
+(atomic-chrome-start-server)
+
+ ;; (setq default-frame-alist '((width . 50)
+ ;;                             (height . 100)
+ ;;                             (menu-bar-lines . 0)
+ ;;                             (tool-bar-lines . 0)
+ ;;                             (right-divider-width . 1)
+ ;;                             (bottom-divider-width . 1)
+ ;;                             (vertical-scroll-bars)
+ ;;                             (left-fringe . 8)
+ ;;                             (right-fringe . 8)))
+
 ;; Works at the end?
 (after! org
-  (with-eval-after-load 'org-faces
-    (set-face-attribute 'org-block nil :background "#2A3339")))
+  (set-face-attribute 'org-block nil :background "#2A3339"))
 
 (if (string-equal system-type "windows-nt")
     (progn
