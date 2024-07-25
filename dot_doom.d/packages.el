@@ -68,3 +68,4 @@
 (package! idle-highlight-mode)
 (package! company-quickhelp)
 (package! smart-comment)
+(package! ansi-color)

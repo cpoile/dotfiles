@@ -663,9 +663,9 @@ going through children."
 
 ;; and make txt files use paragraph indents as the paragraph breaks.
 ;; TODO: this changes for everyone -- need to fix
-(add-hook 'text-mode-hook (lambda ()
-                       (setq-local paragraph-start "[ 	\n\f]\\|\f\\|[ 	]*$")
-                       (setq-local indent-line-function 'insert-tab)))
+;; (add-hook 'text-mode-hook (lambda ()
+;;                        (setq-local paragraph-start "[ 	\n\f]\\|\f\\|[ 	]*$")
+;;                        (setq-local indent-line-function 'insert-tab)))
 
 (defun cp/backward-paragraph (&optional arg)
   "Move backwards by paragraph, but in text-mode normally this would
@@ -684,7 +684,7 @@ going through children."
 
 (defun cp/frame-resize-init (&optional arg)
   "set the frame size for editing using emacs chrome (it always starts too small)"
-  (when (display-graphic-p)
+  (when (display-graphic-p arg)
     (set-frame-size arg 80 24)))
 
 (add-hook 'after-make-frame-functions 'cp/frame-resize-init)
@@ -932,27 +932,27 @@ Return an event vector."
 ;;
 ;; Should use:
 ;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
-;; at least once per installation or while changing this list
- ;; (setq treesit-language-source-alist
- ;;  '((bash "https://github.com/tree-sitter/tree-sitter-bash")
- ;;     (cmake "https://github.com/uyha/tree-sitter-cmake")
- ;;     (css "https://github.com/tree-sitter/tree-sitter-css")
- ;;     (elisp "https://github.com/Wilfred/tree-sitter-elisp")
- ;;     (go "https://github.com/tree-sitter/tree-sitter-go")
- ;;     (html "https://github.com/tree-sitter/tree-sitter-html")
- ;;     (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
- ;;     (json "https://github.com/tree-sitter/tree-sitter-json")
- ;;     (make "https://github.com/alemuller/tree-sitter-make")
- ;;     (markdown "https://github.com/ikatyang/tree-sitter-markdown")
- ;;     (python "https://github.com/tree-sitter/tree-sitter-python")
- ;;     (toml "https://github.com/tree-sitter/tree-sitter-toml")
- ;;     (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
- ;;     (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
- ;;     (yaml "https://github.com/ikatyang/tree-sitter-yaml")
- ;;     (c "https://github.com/tree-sitter/tree-sitter-c")
- ;;     (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
- ;;     (rust "https://github.com/tree-sitter/tree-sitter-rust")
- ;;     (odin "https://github.com/ap29600/tree-sitter-odin")))
+;; ;;at least once per installation or while changing this list
+;; (setq treesit-language-source-alist
+;;       '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+;;         (cmake "https://github.com/uyha/tree-sitter-cmake")
+;;         (css "https://github.com/tree-sitter/tree-sitter-css")
+;;         (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+;;         (go "https://github.com/tree-sitter/tree-sitter-go")
+;;         (html "https://github.com/tree-sitter/tree-sitter-html")
+;;         (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+;;         (json "https://github.com/tree-sitter/tree-sitter-json")
+;;         (make "https://github.com/alemuller/tree-sitter-make")
+;;         (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+;;         (python "https://github.com/tree-sitter/tree-sitter-python")
+;;         (toml "https://github.com/tree-sitter/tree-sitter-toml")
+;;         (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+;;         (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+;;         (yaml "https://github.com/ikatyang/tree-sitter-yaml")
+;;         (c "https://github.com/tree-sitter/tree-sitter-c")
+;;         (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+;;         (rust "https://github.com/tree-sitter/tree-sitter-rust")
+;;         (odin "https://github.com/ap29600/tree-sitter-odin")))
 
  ;; (major-mode-remap-alist
  ;;  '((elixir-mode . elixir-ts-mode)))
@@ -1013,9 +1013,21 @@ Return an event vector."
 ;;(defun go-mode-run-hooks () (run-hooks 'go-mode-hook))
 ;;(add-hook 'go-ts-mode-hook #'go-mode-run-hooks)
 
-;;
 (after! go-ts-mode
   (setq auto-mode-alist (delete '("\\.go\\'" . go-ts-mode) auto-mode-alist)))
+
+
+;;
+;; flash on copy
+;;
+
+(defun my/pulse-current-region (&rest _)
+  "Pulse the current implicit or active region."
+  (if mark-active
+      (pulse-momentary-highlight-region (region-beginning) (region-end))
+    (pulse-momentary-highlight-one-line)))
+
+(advice-add #'kill-ring-save :before #'my/pulse-current-region)
 
 
 ;; Edit text areas in chrome with Ctrl-.
@@ -1039,6 +1051,11 @@ Return an event vector."
              '("~/repos/ts-scratch/src/" :extension
                ("js" "ts" "tsx" "jsx" "cjs" "mjs")))
 (atomic-chrome-start-server)
+
+(require 'ansi-color)
+(defun display-ansi-colors ()
+  (interactive)
+  (ansi-color-apply-on-region (point-min) (point-max)))
 
  ;; (setq default-frame-alist '((width . 50)
  ;;                             (height . 100)
