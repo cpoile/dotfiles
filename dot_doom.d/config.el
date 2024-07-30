@@ -27,7 +27,7 @@
 
 (if (string-equal system-type "darwin")
     (progn
-      (setq doom-font (font-spec :family "JetBrains Mono" :size 16 :weight 'Light))))
+      (setq doom-font (font-spec :family "JetBrains Mono" :size 15 :weight 'Light))))
 
 (if (string-equal system-type "gnu/linux")
     (progn
