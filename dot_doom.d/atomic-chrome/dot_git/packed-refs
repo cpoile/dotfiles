@@ -1,0 +1,9 @@
+# pack-refs with: peeled fully-peeled sorted 
+a85f543c554319a90370d4a8f3aa7a7cf36dddb7 refs/remotes/origin/dev
+bf6a02c1f5cba8e941a9f9ee5e744bdc72e64985 refs/remotes/origin/feat/chrome-emacs
+0a3ed73b78b511cb87c84e569334ba277c15cd12 refs/remotes/origin/fix/long-text
+7ae4397640c7a9f1c52edaef36710c47f7111c41 refs/remotes/origin/master
+6fe75d409323554d4c4f35ac0e90963fe90d3a43 refs/tags/v0.1.0
+cb65f7404556a717fcb63c6abf8cfdca9204eddd refs/tags/v1.0.0
+439b669b10b671f5795fd5557abfbc30e0d6fbb4 refs/tags/v1.0.1
+38ce9127285e1ff45f0f39b9da36a682103bdb96 refs/tags/v2.0.0

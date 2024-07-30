@@ -1,0 +1,13 @@
+# pack-refs with: peeled fully-peeled sorted 
+9b624025af3be05144dd0beba78118965844d0d5 refs/remotes/origin/infinite-loop-fix
+40c208eaab99999d7c1e4bea883648da24c03be3 refs/remotes/origin/main
+be99c4636ad72bcea535392d9097c32b98ec0056 refs/remotes/origin/master
+b89e002187ce932e82394023820deb8407842291 refs/remotes/origin/rfc6455
+0d96ba2ff5a25c6cd6c66f417cc9b5f38a4308ba refs/tags/1.10
+491a60b8bb8a6c3bd081c70354ab82040b0a7db3 refs/tags/1.12
+34e11124fdd9d73e431499ba8a6b6a8023519664 refs/tags/1.13
+1f086f14f0f55f55eafd09f404f48e924157c1d1 refs/tags/1.14
+40c208eaab99999d7c1e4bea883648da24c03be3 refs/tags/1.15
+a9b8e74fa190024cd450ef4f832482e8438674fa refs/tags/1.8
+7d2adf218743c52578c8e8fd5584a5e54732e256 refs/tags/1.9
+f7d3fb5409aed9f5cdb745f0e61a0c43c097588c refs/tags/v1.7
