@@ -336,6 +336,7 @@ alias ll='eza -lah'
 alias ec='emacsclient -nw'
 alias cm='chezmoi'
 alias cmp='chezmoi git pull -- --autostash --rebase && chezmoi diff'
+alias s="kitten ssh"
 
 # so that ctrl-d doesn't close terminal
 set -o ignoreeof

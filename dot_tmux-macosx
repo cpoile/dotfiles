@@ -1,7 +1,10 @@
 # Copy & Paste
 set -g mode-keys emacs
+unbind-key M-v
+unbind-key M-w
 bind-key [ copy-mode
 bind-key -T copy-mode Space send-keys -X begin-selection
+# bind-key -T copy-mode M-w   send-keys -X copy-pipe-and-cancel "pbcopy"
 bind-key -T copy-mode M-w   send-keys -X copy-pipe-and-cancel "pbcopy"
 bind-key -T copy-mode C-g   send-keys -X send-keys -X cancel
 
