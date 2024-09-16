@@ -3,7 +3,7 @@
 set -g mode-keys emacs
 bind-key [ copy-mode
 bind-key -T copy-mode Space send-keys -X begin-selection
-bind-key -T copy-mode M-w   send-keys -X copy-pipe-and-cancel "xclip -selection c"
+bind-key -T copy-mode M-w   send-keys -X copy-pipe-and-cancel "xclip -selection clipboard"
 bind-key -T copy-mode C-g   send-keys -X send-keys -X cancel
 
 # To copy, left click and drag to highlight text in yellow,
