@@ -1,19 +1,14 @@
 lastupdatecheck: 0
 recentrepos:
-- /Users/chris/go/src/github.com/mattermost/mattermost-mobile
-- /Users/chris/go/src/github.com/mattermost/calls
-- /Users/chris/go/src/github.com/mattermost/enterprise
-- /Users/chris/build/whisper.cpp
-- /Users/chris/git/computer_enhance/git
-- /Users/chris/git/computer_enhance
-- /Users/chris/dev/odin/aoc2022
-- /Users/chris/dev/odin/ols
-- /Users/chris/git/dotfiles
-- /Users/chris/go/src/github.com/mattermost/e2e
-- /Users/chris/go/src/github.com/cpoile/practice
-- /Users/chris/go/src/github.com/mattermost/push-proxy
+    - /home/chris/git/github/mattermost/server
+    - /home/chris/git/github/mattermost/enterprise
 startuppopupversion: 5
+lastversion: 0.42.0
 customcommandshistory: []
 hidecommandlog: false
 ignorewhitespaceindiffview: false
 diffcontextsize: 3
+localbranchsortorder: recency
+remotebranchsortorder: alphabetical
+gitlogorder: topo-order
+gitlogshowgraph: always

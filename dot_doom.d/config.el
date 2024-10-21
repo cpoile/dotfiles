@@ -148,6 +148,9 @@
 (use-package golden-ratio-scroll-screen)
 (global-set-key [remap scroll-down-command] 'golden-ratio-scroll-screen-down)
 (global-set-key [remap scroll-up-command] 'golden-ratio-scroll-screen-up)
+(setq! golden-ratio-scroll-highlight-flag nil)
+(add-hook 'golden-ratio-scroll-screen-down-hook 'pulse-momentary-highlight-one-line)
+(add-hook 'golden-ratio-scroll-screen-up-hook 'pulse-momentary-highlight-one-line)
 
 ;; are we in a terminal?
 ;; (unless (display-graphic-p)
@@ -255,6 +258,11 @@
       "C-M-e" #'odin-next-defun
       "C-M-a" #'odin-previous-defun
       "C-M-l" #'lsp-format-buffer)
+
+
+;;
+;; Programming remapping
+;;
 
 
 ;;
@@ -642,7 +650,6 @@ going through children."
 
 ;; Misc fixes
 
-
 ;; turn off smartparens mode in orgmode (revisit if I ever start doing literate programming)
 ;; don't use the insert-tab indent mode that text-mode uses (it seems to override org, so I guess it runs too?)
 ;; move to the start of an org header, not the start of the line
@@ -710,8 +717,8 @@ going through children."
 ;; (define-key prog-mode-map (kbd "M-/") 'company-capf)
 ;; (map! "M-<left>" #'back-button-global-backward)
 ;; (map! "M-<right>" #'back-button-global-forward)
-(map! "C-M-[" #'back-button-global-backward)
-(map! "C-M-]" #'back-button-global-forward)
+(map! "M-[" #'back-button-global-backward)
+(map! "M-]" #'back-button-global-forward)
 (map! "M-{" #'back-button-local-backward)
 (map! "M-}" #'back-button-local-forward)
 
@@ -764,6 +771,7 @@ going through children."
   ;; (map! :map org-mode-map "M-[" #'org-metaleft)
   (map! :map org-mode-map "C-e" #'end-of-visual-line))
 
+(map! :map prog-mode-map "M-s" #'+default/search-project)
 
 ;;
 ;; Multiple cursors
@@ -866,10 +874,20 @@ going through children."
     ;; until prog-mode-hook is triggered (by activating a major mode derived from
     ;; it, e.g. python-mode)
     :ensure t
-    :bind ("M-w" . clipetty-kill-ring-save)
+    ;;:bind ("M-w" . clipetty-kill-ring-save)
     :config
     ;; code here will run after the package is loaded
     (setq clipetty-assume-nested-mux t)))
+
+;; copy whole line if none is selected
+(defun my/copy-line ()
+  (interactive)
+    (if mark-active
+        (kill-ring-save (region-beginning) (region-end))
+      (kill-ring-save (pos-bol) (pos-eol)))
+  (message "1 line copied"))
+
+(map! "M-w" #'my/copy-line)
 
 ;; Start almost full screen on mac
 (if (string-equal system-type "darwin")
@@ -1016,19 +1034,18 @@ Return an event vector."
 (after! go-ts-mode
   (setq auto-mode-alist (delete '("\\.go\\'" . go-ts-mode) auto-mode-alist)))
 
-
 ;;
 ;; flash on copy
 ;;
-
-(defun my/pulse-current-region (&rest _)
-  "Pulse the current implicit or active region."
-  (if mark-active
-      (pulse-momentary-highlight-region (region-beginning) (region-end))
-    (pulse-momentary-highlight-one-line)))
-
-(advice-add #'kill-ring-save :before #'my/pulse-current-region)
-
+(require 'pulse)
+(after! pulse
+  (defun my/pulse-current-region (&rest _)
+    "Pulse the current implicit or active region."
+    (if mark-active
+        (pulse-momentary-highlight-region (region-beginning) (region-end))
+      (pulse-momentary-highlight-one-line)))
+  (setq pulse-flag 't)
+  (advice-add #'kill-ring-save :before #'my/pulse-current-region))
 
 ;; Edit text areas in chrome with Ctrl-.
 (add-load-path! "~/.doom.d/websocket/")

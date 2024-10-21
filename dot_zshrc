@@ -337,6 +337,7 @@ alias ec='emacsclient -nw'
 alias cm='chezmoi'
 alias cmp='chezmoi git pull -- --autostash --rebase && chezmoi diff'
 alias s="kitten ssh"
+alias gts='gotestsum --format standard-verbose'
 
 # so that ctrl-d doesn't close terminal
 set -o ignoreeof
