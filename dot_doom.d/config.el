@@ -33,6 +33,13 @@
     (progn
       (setq doom-font (font-spec :family "JetBrains Mono" :size 21))))
 
+(if (string-equal system-type "windows-nt")
+    (progn
+      (setq doom-font (font-spec :family "JetBrainsMono NF" :size 22)
+            nerd-icons-font-family "JetBrainsMono NF")
+      ;; Remember to run doom env from a windows cmd, not from mingw
+      (doom-load-envvars-file "~/.emacs.d/.local/env")))
+
 (setq line-spacing 0)
 
 ;;
@@ -54,7 +61,7 @@
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
-(setq display-line-numbers-type 'relative)
+(setq display-line-numbers-type 't)
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
@@ -717,6 +724,8 @@ going through children."
 ;; (define-key prog-mode-map (kbd "M-/") 'company-capf)
 ;; (map! "M-<left>" #'back-button-global-backward)
 ;; (map! "M-<right>" #'back-button-global-forward)
+;; (map! "C-M-[" #'back-button-global-backward)
+;; (map! "C-M-]" #'back-button-global-forward)
 (map! "M-[" #'back-button-global-backward)
 (map! "M-]" #'back-button-global-forward)
 (map! "M-{" #'back-button-local-backward)
@@ -741,6 +750,9 @@ going through children."
 ;;(global-set-key (kbd "M-<return>") '+default/newline-above)
 ;; (global-set-key (kbd "C-o") '+default/newline-above)
 ;; (global-set-key (kbd "C-S-o") 'open-line)
+
+;; this was getting pressed by accident when hitting C-x o quickly: ...?
+;;(global-set-key (kbd "C-x M-o") 'other-window)
 
 ;; Because pressing esc key was bringing up the esc map, and esc again was global-back
 (global-set-key (kbd "<escape>") 'doom/escape)
@@ -840,6 +852,11 @@ going through children."
 ;;(setq dumb-jump-debug t)
 
 ;;
+;; Show previews when searching (not currently working)
+;; look at https://github.com/minad/consult#live-previews
+; (consult-customize :preview-key 'any)   ;; doesn't do anything
+
+;;
 ;; Org-novelist
 ;;
 (load! "org-novelist.el")
@@ -853,17 +870,22 @@ going through children."
 ;;
 ;; So pdflatex can be found
 ;;
-(defun set-exec-path-from-shell-PATH ()
-  "Sets the exec-path to the same value used by the user shell"
-  (let ((path-from-shell
-         (replace-regexp-in-string
-          "[[:space:]\n]*$" ""
-          (shell-command-to-string "$SHELL -l -c 'echo $PATH'"))))
-    (setenv "PATH" path-from-shell)
-    (setq exec-path (split-string path-from-shell path-separator))))
-;; call function now
+;; (defun set-exec-path-from-shell-PATH ()
+;;   "Sets the exec-path to the same value used by the user shell"
+;;   (let ((path-from-shell
+;;          (replace-regexp-in-string
+;;           "[[:space:]\n]*$" ""
+;;           (shell-command-to-string "$SHELL -l -c 'echo $PATH'"))))
+;;     (setenv "PATH" path-from-shell)
+;;     (setq exec-path (split-string path-from-shell path-separator))))
+;; ;; call function now
 
-(set-exec-path-from-shell-PATH)
+;; (set-exec-path-from-shell-PATH)
+
+;;
+;; Find clangd
+;;
+;;(executable-find "clangd")
 
 
 ;; Clippety
@@ -879,15 +901,16 @@ going through children."
     ;; code here will run after the package is loaded
     (setq clipetty-assume-nested-mux t)))
 
+;; was using this, but windows had `whole-line-or-region-kill-ring-save' -- shouldn't that be enough?
 ;; copy whole line if none is selected
-(defun my/copy-line ()
-  (interactive)
-    (if mark-active
-        (kill-ring-save (region-beginning) (region-end))
-      (kill-ring-save (pos-bol) (pos-eol)))
-  (message "1 line copied"))
+;; (defun my/copy-line ()
+;;   (interactive)
+;;     (if mark-active
+;;         (kill-ring-save (region-beginning) (region-end))
+;;       (kill-ring-save (pos-bol) (pos-eol)))
+;;   (message "1 line copied"))
 
-(map! "M-w" #'my/copy-line)
+;; (map! "M-w" #'my/copy-line)
 
 ;; Start almost full screen on mac
 (if (string-equal system-type "darwin")
@@ -895,6 +918,10 @@ going through children."
       (setq frame-inhibit-implied-resize t)  ;; prevent resize window on startup
       (set-frame-height (window-frame) 65)
       (set-frame-width (window-frame) 220)))
+
+(if (string-equal system-type "windows-nt")
+    (progn
+      (toggle-frame-maximized (window-frame))))
 
 ;;
 ;; xterm crap
@@ -1047,27 +1074,29 @@ Return an event vector."
   (setq pulse-flag 't)
   (advice-add #'kill-ring-save :before #'my/pulse-current-region))
 
-;; Edit text areas in chrome with Ctrl-.
-(add-load-path! "~/.doom.d/websocket/")
-(add-load-path! "~/.doom.d/atomic-chrome/")
-(require 'atomic-chrome)
-(setq-default atomic-chrome-buffer-open-style 'frame)
-(setq-default atomic-chrome-auto-remove-file t)
-(setq atomic-chrome-buffer-frame-width 50)
-(setq atomic-chrome-buffer-frame-height 100)
-(setq-default atomic-chrome-url-major-mode-alist
-              '(("ramdajs.com" . js-ts-mode)
-                ("github.com" . gfm-mode)
-                ("gitlab.com" . gfm-mode)
-                ("leetcode.com" . typescript-ts-mode)
-                ("codesandbox.io" . js-ts-mode)
-                ("typescriptlang.org" . typescript-ts-mode)
-                ("jsfiddle.net" . js-ts-mode)
-                ("w3schools.com" . js-ts-mode)))
-(add-to-list 'atomic-chrome-create-file-strategy
-             '("~/repos/ts-scratch/src/" :extension
-               ("js" "ts" "tsx" "jsx" "cjs" "mjs")))
-(atomic-chrome-start-server)
+(if (string-equal system-type "gnu/linux")
+    (progn
+      ;; Edit text areas in chrome with Ctrl-.
+      (add-load-path! "~/.doom.d/websocket/")
+      (add-load-path! "~/.doom.d/atomic-chrome/")
+      (require 'atomic-chrome)
+      (setq-default atomic-chrome-buffer-open-style 'frame)
+      (setq-default atomic-chrome-auto-remove-file t)
+      (setq atomic-chrome-buffer-frame-width 50)
+      (setq atomic-chrome-buffer-frame-height 100)
+      (setq-default atomic-chrome-url-major-mode-alist
+                    '(("ramdajs.com" . js-ts-mode)
+                      ("github.com" . gfm-mode)
+                      ("gitlab.com" . gfm-mode)
+                      ("leetcode.com" . typescript-ts-mode)
+                      ("codesandbox.io" . js-ts-mode)
+                      ("typescriptlang.org" . typescript-ts-mode)
+                      ("jsfiddle.net" . js-ts-mode)
+                      ("w3schools.com" . js-ts-mode)))
+      (add-to-list 'atomic-chrome-create-file-strategy
+                   '("~/repos/ts-scratch/src/" :extension
+                     ("js" "ts" "tsx" "jsx" "cjs" "mjs")))
+      (atomic-chrome-start-server)))
 
 (require 'ansi-color)
 (defun display-ansi-colors ()
@@ -1086,11 +1115,16 @@ Return an event vector."
 
 ;; Works at the end?
 (after! org
-  (set-face-attribute 'org-block nil :background "#2A3339"))
+  (with-eval-after-load 'org-faces
+    (set-face-attribute 'org-block nil :background "#2A3339")))
 
-(if (string-equal system-type "windows-nt")
-    (progn
-      (setq doom-font (font-spec :family "JetBrainsMono NF" :size 25)
-            nerd-icons-font-family "JetBrainsMono NF")
-      ;; Remember to run doom env from a windows cmd, not from mingw
-      (doom-load-envvars-file "~/.emacs.d/.local/env")))
+;;
+;; Customize forestbones
+;;
+;;(set-face-attribute 'font-lock-comment-face nil :foreground "#586D36")
+;;(set-face-attribute 'font-lock-comment-face nil :foreground "#637B3D")
+(set-face-attribute 'font-lock-comment-face nil :foreground "#6E8943")
+
+(require 'server)
+(unless (eq (server-running-p) 't)
+  (server-start))
