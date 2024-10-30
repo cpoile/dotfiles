@@ -35,15 +35,15 @@
 
 (if (string-equal system-type "windows-nt")
     (progn
-      (setq doom-font (font-spec :family "JetBrainsMono NF" :size 22)
-            nerd-icons-font-family "JetBrainsMono NF")
+      (setq doom-font (font-spec :family "JetBrainsMono NF Regular" :size 22 :weight 'regular)
+            nerd-icons-font-family "JetBrainsMono NF Regular")
       ;; Remember to run doom env from a windows cmd, not from mingw
       (doom-load-envvars-file "~/.emacs.d/.local/env")))
 
 (setq line-spacing 0)
 
 ;;
-;; If you or Emacs can't find your font, use 'M-x describe-font' to look them
+;; If you or (Emacs can't find your font, use 'M-x describe-font' to look them
 ;; up, `M-x eval-region' to execute elisp code, and 'M-x doom/reload-font' to
 ;; refresh your font settings. If Emacs still can't find your font, it likely
 ;; wasn't installed correctly. Font issues are rarely Doom issues!
@@ -61,7 +61,8 @@
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
-(setq display-line-numbers-type 't)
+;;(setq display-line-numbers-type 't)
+(setq display-line-numbers-type nil)
 
 ;; If you use `org' and don't want your org files in the default location below,
 ;; change `org-directory'. It must be set before org loads!
@@ -170,10 +171,11 @@
 (use-package! smart-comment
   :bind ("M-;" . smart-comment))
 
-(global-set-key (kbd "C-c ]") 'git-gutter:next-hunk)
-(global-set-key (kbd "C-c [") 'git-gutter:previous-hunk)
+(global-set-key (kbd "C-c ]") 'diff-hl-show-hunk-next)
+(global-set-key (kbd "C-c [") 'diff-hl-show-hunk-previous)
 
 (define-key prog-mode-map (kbd "C-q") 'lsp-ui-doc-show)
+
 ;;
 ;; Jai setup
 ;;
@@ -271,6 +273,26 @@
 ;; Programming remapping
 ;;
 
+;; Intellij switch frame hotkey
+(map! :map global-map "C-x f" #'+workspace/switch-to)
+
+;;
+;; Perspective -- put most recently used persp on top -- doesn't work, abandoned.
+;;
+
+;; (defun cp/switch-first-two-persp (names)
+;;   (if (null (cl-rest names))
+;;       names
+;;     (let* ((first (nth 0 names))
+;;            (second (nth 1 names))
+;;            (rest (nthcdr 2 names)))
+;;       (pushnew! rest first second))))
+
+;; (cp/switch-first-two-persp (list "first" "second" "third" "forth"))
+;; (cp/switch-first-two-persp (list "first"))
+
+;; (after! persp-mode
+;;   (add-hook persp-before-switch-functions '))
 
 ;;
 ;; Misc settings
@@ -280,12 +302,15 @@
 (setq doom-modeline-display-default-persp-name t)
 (setq! mark-even-if-inactive nil)
 (whole-line-or-region-global-mode)
+(setq global-mark-ring-max 32)
+(setq mark-ring-max 32)
 
 ;; Magit
 (after! magit
   (setq!
    magit-diff-refine-hunk 'all
-   git-commit-summary-max-length 68))
+   git-commit-summary-max-length 68)
+   (setq magit-ediff-dwim-show-on-hunks t))
 ;; (use-package magit-delta
 ;;   :hook (magit-mode . magit-delta-mode))
 
@@ -306,14 +331,16 @@
       ;"C-q" #'cp/lsp-doc-window-or-focus
       "C-q" #'lsp-ui-doc-glance
       "C-M-l" #'lsp-format-buffer)
-(setq! lsp-ui-doc-max-height 40)
-(setq! lsp-ui-doc-max-width 150)
 (set-popup-rules!
   '(("^\\*cargo-run" :size 0.4 :slot -1 :ttl t)))
 ;;(setq! lsp-ui-doc-enable nil)
 
 (after! rust-mode
   (modify-syntax-entry ?_ "w" rust-mode-syntax-table))
+
+(after! lsp-ui-doc
+  (setq! lsp-ui-doc-max-height 40)
+  (setq! lsp-ui-doc-max-width 150))
 
 (setq! lsp-idle-delay 0.2)
 (setq! lsp-rust-analyzer-server-display-inlay-hints t)
@@ -423,16 +450,132 @@
 ;;
 ;; C-mode
 ;;
+
+(defun cp/c-next-defun ()
+  (interactive)
+  (c-beginning-of-defun -1))
+
 (map! :map c-mode-map
       "C-q" #'+lookup/documentation
       "C-M-l" #'lsp-format-buffer
       "C-c C-c" #'compile
-      "C-c C-r" #'recompile)
+      "C-c C-r" #'recompile
+      "C-M-e" #'cp/c-next-defun)
+
+;;
+;; c-ts-mode
+;;
+
+(defun cp/c-ts-next-defun ()
+  (interactive)
+  (if (treesit-beginning-of-defun -1)
+      (forward-line)))
+
+(defun cp/c-ts-previous-defun ()
+  (interactive)
+  (let ((prev (lambda (numtimes)
+                (interactive)
+                (if (treesit-beginning-of-defun numtimes)
+                    (forward-line))))
+        (cur (point)))
+    (if (= cur (progn
+                 (funcall prev 1)
+                 (point)))
+        (funcall prev 2))))
+
+;;
+;; To go to matching brace with a single key
+;;
+
+(defun cp/matching-brace ()
+  (interactive)
+  (if (= (char-before) ?\})
+      (sp-backward-sexp)
+    (if (= (char-after) ?\{)
+        (sp-forward-sexp)
+      (sp-backward-up-sexp))))
+
+(defun cp/go-to-def-or-ref ()
+  (interactive)
+  (let ((cur (line-number-at-pos)))
+    (if (= cur (progn
+             (+lookup/definition (point))
+             (line-number-at-pos)))
+        (+lookup/references (point)))))
+
+(map! :map c-ts-mode-map
+      ;"C-q" #'+lookup/documentation
+      "C-M-l" #'lsp-format-buffer
+      "C-c C-c" #'compile
+      "C-c C-r" #'recompile
+      "C-M-a" #'cp/c-ts-previous-defun
+      "C-M-e" #'cp/c-ts-next-defun
+      "M-m" #'cp/matching-brace
+      "M-." #'cp/go-to-def-or-ref)
 
 ;; TODO: make it so that using C-u shows all buffers (except that's used... so, something else)
 (map! "C-x C-b" #'(lambda (arg)
                     (interactive "P")
                     (with-persp-buffer-list () (ibuffer arg))))
+
+(remove-hook 'c-mode-common-hook 'rainbow-delimiters-mode nil)
+
+(after! c-ts-mode
+  (add-hook 'c-ts-mode-hook 'lsp-deferred)
+  )
+
+;; (defun c-ts-mode-call-hook () (run-hooks 'c-mode-hook))
+;; (add-hook 'c-ts-mode-hook #'c-ts-mode-call-hook)
+
+(setq next-error-message-highlight t)
+
+(setq c-ts-mode-indent-offset 4)
+
+
+;;
+;; LSP mode
+;;
+
+(with-eval-after-load 'lsp-mode
+  (setq lsp-enable-symbol-highlighting nil))
+
+;;
+;; Find clangd
+;;
+;;(executable-find "clangd")
+
+;;(setq lsp-clients-clangd-args '("--log=verbose" "-j=16" "--header-insertion-decorators=0"))
+(setq lsp-clients-clangd-args '("-j=16" "--header-insertion-decorators=0"))
+
+;;
+;; RemedyBg controls
+;;
+
+(defun remedy-run ()
+  (interactive)
+  (shell-command "remedybg.exe bring-debugger-to-foreground")
+  (shell-command "remedybg.exe start-debugging"))!
+
+(defun remedy-run-to-cursor ()
+  (interactive)
+  (let* ((name (buffer-file-name))
+         (linenum (line-number-at-pos))
+         (command (format "remedybg.exe run-to-cursor %s %d &" name linenum)))
+    (shell-command command)))
+
+(defun remedy-open-to-cursor ()
+  (interactive)
+  (let* ((name (buffer-file-name))
+         (linenum (line-number-at-pos))
+         (command (format "remedybg.exe open-file %s %d &" name linenum)))
+    (shell-command command)))
+
+(map! :map c-ts-mode-map "C-c r r" #'remedy-run)
+(map! :map c-ts-mode-map "C-c r c" #'remedy-run-to-cursor)
+(map! :map c-ts-mode-map "C-c r o" #'remedy-open-to-cursor)
+
+(add-to-list 'display-buffer-alist
+  (cons "\\*Async Shell Command\\*.*" (cons #'display-buffer-no-window nil)))
 
 ;;
 ;; Customize zenburn
@@ -531,8 +674,9 @@ there's a region, all lines that region covers will be duplicated."
 ;; Org-mode
 ;;
 
-(setq org-startup-folded 'content)
-(setq org-use-speed-commands t)
+(after! org
+  (setq org-startup-folded 'content)
+  (setq org-use-speed-commands t))
 
 ;; Move up and down org-trees with C-M-n and C-M-p
 (defun cp/org-next-visible-any-item-or-heading ()
@@ -794,18 +938,9 @@ going through children."
          ("C-M->" . mc/mark-next-like-this)
          ("C-M-<" . mc/mark-previous-like-this)
          ("C-c C-." . mc/mark-all-like-this)
-         ("C-c C-SPC" . mc/edit-lines)))
-
-;; (use-package! multiple-cursors
-;;   :ensure t
-;;   :config
-;;   (lambda ()
-;;     (defvar mc/mark-next-like-this)
-;;     (defvar mc/mark-previous-like-this)
-;;     (defvar mc/mark-all-like-this)
-;;     (map! "C-M->" 'mc/mark-next-like-this)
-;;     (map! "C-M-<" 'mc/mark-previous-like-this)
-;;     (map! "C-c C-," 'mc/mark-all-like-this)))
+         ("C-c C-SPC" . mc/edit-lines)
+         ("M-j" . mc/mark-next-like-this-symbol)
+         ("M-J" .  mc/unmark-next-like-this)))
 
 ;; Now C-x SPC will be rectangle mark mode
 (after! back-button
@@ -839,17 +974,29 @@ going through children."
 ;;
 ;; Dumb-jump for jai instead of using an ols
 ;;
-(use-package! dumb-jump
-  :ensure t
-  :custom
-  (dumb-jump-prefer-searcher 'rg)
-  ;; (xref-show-definitions-function #'xref-show-definitions-completing-read)
-  (xref-show-definitions-function #'consult-xref)
-  (dumb-jump-rg-search-args "--pcre2 --type-add 'jai:*.{jai}'")
+;; (use-package! dumb-jump
+;;   :ensure t
+;;   :custom
+;;   (dumb-jump-prefer-searcher 'rg)
+;;   ;; (xref-show-definitions-function #'xref-show-definitions-completing-read)
+;;   ;;(xref-show-definitions-function #'consult-xref)
+;;   (dumb-jump-rg-search-args "--pcre2 --type-add 'jai:*.{jai}'")
 
-  :config
-  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+;;   :config
+;;   (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+
 ;;(setq dumb-jump-debug t)
+
+;;
+;; Show which-function-mode at the top of the screen
+;;
+(which-function-mode)
+;; (setq-default header-line-format
+;;               '((which-func-mode ("" which-func-format " "))))
+;; (setq mode-line-misc-info
+;;             ;; We remove Which Function Mode from the mode line, because it's mostly
+;;             ;; invisible here anyway.
+;;             (assq-delete-all 'which-func-mode mode-line-misc-info))
 
 ;;
 ;; Show previews when searching (not currently working)
@@ -883,9 +1030,36 @@ going through children."
 ;; (set-exec-path-from-shell-PATH)
 
 ;;
-;; Find clangd
+;; To make TODO: highlight the whole line:
 ;;
-;;(executable-find "clangd")
+;; (after! hl-todo
+;;   (defun hl-todo--setup-regexp ()
+;;     "Setup keyword regular expression.
+;;      See the function `hl-todo--regexp'."
+;;     (when-let ((bomb (assoc "???" hl-todo-keyword-faces)))
+;;       ;; If the user customized this variable before we started to
+;;       ;; treat the strings as regexps, then the string "???" might
+;;       ;; still be present.  We have to remove it because it results
+;;       ;; in the regexp search taking forever.
+;;       (setq hl-todo-keyword-faces (delete bomb hl-todo-keyword-faces)))
+;;     (setq hl-todo--regexp
+;;           (concat "\\(\\<"
+;;                   "\\(" (mapconcat #'car hl-todo-keyword-faces "\\|") "\\)"
+;;                   "\\>"
+;;                   "[^\"\n]*\\)")))
+;;   (setq hl-todo--keywords
+;;         `((,(lambda (bound) (hl-todo--search nil bound))
+;;      (1 (hl-todo--get-face) prepend t)))))
+
+(after! hl-todo
+  (defface my-TODO-face
+    '((t :background "#52442E" :foreground "#D3C6AA" :inherit (hl-todo)))
+    "Face for highlighting the TODO keyword."
+    :group 'hl-todo)
+
+  ;; remove existing todo:
+  (setq hl-todo-keyword-faces (cl-remove "TODO" hl-todo-keyword-faces :test 'equal :key 'car))
+  (add-to-list 'hl-todo-keyword-faces '("TODO" . my-TODO-face)))
 
 
 ;; Clippety
@@ -999,6 +1173,17 @@ Return an event vector."
 ;;         (rust "https://github.com/tree-sitter/tree-sitter-rust")
 ;;         (odin "https://github.com/ap29600/tree-sitter-odin")))
 
+;; to install for c and c++ only:
+;;
+;; (setq treesit-language-source-alist
+;;       '((c "https://github.com/tree-sitter/tree-sitter-c")
+;;         (cpp "https://github.com/tree-sitter/tree-sitter-cpp")))
+;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
+
+(add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
+(add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
+(add-to-list 'major-mode-remap-alist '(c-or-c++-mode . c-or-c++-ts-mode))
+
  ;; (major-mode-remap-alist
  ;;  '((elixir-mode . elixir-ts-mode)))
 
@@ -1013,9 +1198,6 @@ Return an event vector."
 ;; ;; When you want to keep your mode hooks:
 ;; (defun rust-ts-mode-call-hook () (run-hooks 'rust-mode-hook))
 ;; (add-hook 'rust-ts-mode-hook #'rust-ts-mode-call-hook)
-
-(defun c-ts-mode-call-hook () (run-hooks 'c-mode-hook))
-(add-hook 'c-ts-mode-hook #'c-ts-mode-call-hook)
 
 ;; is it enabled?
 (defun treesit-enabled-p ()
@@ -1113,6 +1295,11 @@ Return an event vector."
  ;;                             (left-fringe . 8)
  ;;                             (right-fringe . 8)))
 
+;;
+;; Olivetti mode for writing
+;; does it need to be required?
+;;(require 'olivetti)
+
 ;; Works at the end?
 (after! org
   (with-eval-after-load 'org-faces
@@ -1121,9 +1308,30 @@ Return an event vector."
 ;;
 ;; Customize forestbones
 ;;
-;;(set-face-attribute 'font-lock-comment-face nil :foreground "#586D36")
-;;(set-face-attribute 'font-lock-comment-face nil :foreground "#637B3D")
-(set-face-attribute 'font-lock-comment-face nil :foreground "#6E8943")
+
+(after! forestbones-theme
+  ;;(set-face-attribute 'font-lock-comment-face nil :foreground "#586D36")
+  ;;(set-face-attribute 'font-lock-comment-face nil :foreground "#637B3D")
+  ;;(set-face-attribute 'font-lock-comment-face nil :foreground "#6E8943")
+  (set-face-attribute 'font-lock-comment-face nil :foreground "#6E7B85")
+                                        ;(set-face-attribute 'isearch nil :background "#76875a" :foreground "#F7ECD2")
+  (set-face-attribute 'isearch nil :background "#726C5D" :foreground "#E7DCC4")
+                                        ;(set-face-attribute 'lazy-highlight nil :background "#92a375" :foreground "#F7ECD2")
+  (set-face-attribute 'lazy-highlight nil :background "#76875a" :foreground "#F7ECD2")
+
+  (set-face-attribute 'font-lock-preprocessor-face nil :foreground "#7FBCB4") ;; was red: #E67C7F
+  (set-face-attribute 'font-lock-keyword-face nil :foreground "#B5C49E") ;; was: ...forget green I think
+  (set-face-attribute 'font-lock-type-face nil :foreground "#7FBCB4") ;; was: #DDBD7F A7C080
+  (set-face-attribute 'font-lock-function-name-face nil :foreground "#EDC77A") ;; was: #E7DCC4 EDC77A
+  (set-face-attribute 'font-lock-variable-name-face nil :foreground "#D3C6AA") ;; was: #efcadb D3C6AA
+  (set-face-attribute 'default nil :foreground "#D3C6AA") ;; was: #efcadb D3C6AA e2d5b8
+  (set-face-attribute 'window-divider nil :foreground "gray30")
+  )
+
+;; the face in the ui-doc hover, it uses markdown mode
+(after! lsp-ui-doc
+  (set-face-attribute 'markdown-inline-code-face nil :background nil)
+  (set-face-attribute 'markdown-code-face nil :background nil))
 
 (require 'server)
 (unless (eq (server-running-p) 't)

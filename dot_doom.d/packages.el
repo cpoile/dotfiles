@@ -49,6 +49,8 @@
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;(unpin! t)
 
+(package! transient :pin "c2bdf7e12c530eb85476d3aef317eb2941ab9440")
+(package! with-editor :pin "bbc60f68ac190f02da8a100b6fb67cf1c27c53ab")
 (package! smartrep)
 (package! back-button)
 (package! visible-mark)
@@ -62,10 +64,14 @@
 (package! writeroom-mode)
 (package! clipetty)
 
-;; doesn't work on windows?
 (package! golden-ratio-scroll-screen)
 (package! hl-line :disable t)
 (package! idle-highlight-mode)
 (package! company-quickhelp)
 (package! smart-comment)
 (package! ansi-color)
+
+;; NOTE: when adding a new package, need to run `doom sync' in the cmdline, then reload or restart (in windows).
+
+(package! olivetti
+  :recipe (:host github :repo "rnkn/olivetti"))
