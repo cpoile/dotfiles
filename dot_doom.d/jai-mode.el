@@ -98,6 +98,13 @@
            (and "0" (any "xX") (+ hex-digit)))
        (opt (and (any "_" "A-Z" "a-z") (* (any "_" "A-Z" "a-z" "0-9"))))
        symbol-end)))
+(defconst jai-identifier-rx "[[:word:][:multibyte:]_]+")
+(defconst jai--defun-rx "\(.*\).*\{")  ;; original
+(defconst jai-proc-rx (concat "\\(\\_<" jai-identifier-rx "\\_>\\)\\s *::\\s *\(.*\).*\{"))
+(defconst jai-pointer-rx "\\*")
+
+;; TODO: fix for jai's actual idents later
+(defconst jai-type-rx (concat "\\_<\\(" jai-identifier-rx "\\)\\s *::\\s *\\(?:struct\\|enum\\|union\\|distinct\\)\\s *\\_>"))
 
 (defconst jai-font-lock-defaults
   `(;; Keywords
@@ -108,6 +115,9 @@
 
     ;; Variables
     (,(jai-keywords-rx jai-builtins) 1 font-lock-variable-name-face)
+
+    ;; Function names
+    (,jai-proc-rx 1 font-lock-function-name-face)
 
     ;; Hash directives
     ("#\\w+" . font-lock-preprocessor-face)
@@ -121,10 +131,14 @@
     ;; Numbers
     (,(jai-wrap-word-rx jai-number-rx) . font-lock-constant-face)
 
+    ;; Pointers
+    (,jai-pointer-rx . 'font-lock-operator-face)
+
     ;; Types
     (,(jai-keywords-rx jai-typenames) 1 font-lock-type-face)
     (,jai-hat-type-rx 1 font-lock-type-face)
     (,jai-dollar-type-rx 1 font-lock-type-face)
+    (,jai-type-rx 1 font-lock-type-face)
 
     ("---" . font-lock-constant-face)))
 
@@ -132,8 +146,6 @@
 (unless (fboundp 'setq-local)
   (defmacro setq-local (var val)
     `(set (make-local-variable ',var) ,val)))
-
-(defconst jai--defun-rx "\(.*\).*\{")
 
 (defmacro jai-paren-level ()
   `(car (syntax-ppss)))

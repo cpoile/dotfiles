@@ -174,7 +174,18 @@
 (global-set-key (kbd "C-c ]") 'diff-hl-show-hunk-next)
 (global-set-key (kbd "C-c [") 'diff-hl-show-hunk-previous)
 
-(define-key prog-mode-map (kbd "C-q") 'lsp-ui-doc-show)
+(defun cp/find-file (&optional arg)
+  "if arg, use regular find file. e.g., C-u C-x C-f"
+  (interactive "P")
+  (if (or arg (not (doom-project-p)))
+          (call-interactively #'find-file)
+    (projectile-find-file arg)))
+
+(map! :map prog-mode-map
+      "C-q" #'lsp-ui-doc-show)
+
+(map! :map global-map
+      "C-x C-f" #'cp/find-file)
 
 ;;
 ;; Jai setup
@@ -188,24 +199,39 @@
       ("C-c C-r" . 'recompile)
       ("C-c C-c" . 'compile)))
 
+
+
 (defun jai-previous-defun ()
   "Go to previous proc."
   (interactive)
   (beginning-of-line)
-  (re-search-backward jai--defun-rx)
+  (re-search-backward jai-proc-rx)
   (beginning-of-line))
 
 (defun jai-next-defun ()
   "Go to next proc."
   (interactive)
-  (forward-line)
-  (re-search-forward jai--defun-rx)
+  (end-of-line)
+  (re-search-forward jai-proc-rx nil t)
   (beginning-of-line))
 
 (map! :map jai-mode-map
       "C-M-e" #'jai-next-defun
-      "C-M-a" #'jai-previous-defun)
+      "C-M-a" #'jai-previous-defun
+      "M-m" #'cp/matching-brace
+      ;;"M-." #'cp/go-to-def-or-ref
+      )
 
+(add-hook 'jai-mode-hook (lambda ()
+                           (setq-local indent-tabs-mode nil
+                                       tab-width 4
+                                       indent-line-function 'js-indent-line
+                                       electric-indent-chars '(10 127)
+                                       block-comment-start "//"
+                                       block-comment-end "")))
+
+;; (remove-hook 'jai-mode-hook (lambda ()
+;;                               ))
 
 ;;
 ;; Odin setup
@@ -274,7 +300,12 @@
 ;;
 
 ;; Intellij switch frame hotkey
-(map! :map global-map "C-x f" #'+workspace/switch-to)
+(map! :map global-map
+      "C-x f" #'+workspace/switch-to
+
+      ;; tired of reaching for ctrl-=
+      "C-i" #'er/expand-region
+      )
 
 ;;
 ;; Perspective -- put most recently used persp on top -- doesn't work, abandoned.
@@ -293,6 +324,17 @@
 
 ;; (after! persp-mode
 ;;   (add-hook persp-before-switch-functions '))
+
+;;
+;; Perspective mode -- autoload dotfiles
+;;
+
+(after! persp-mode
+  (add-hook 'persp-mode-hook
+            (lambda ()
+              (interactive)
+              (doom/quickload-session t)
+              (+workspace/switch-to "dotfiles"))))
 
 ;;
 ;; Misc settings
@@ -531,7 +573,6 @@
 
 (setq c-ts-mode-indent-offset 4)
 
-
 ;;
 ;; LSP mode
 ;;
@@ -544,8 +585,69 @@
 ;;
 ;;(executable-find "clangd")
 
-;;(setq lsp-clients-clangd-args '("--log=verbose" "-j=16" "--header-insertion-decorators=0"))
-(setq lsp-clients-clangd-args '("-j=16" "--header-insertion-decorators=0"))
+(setq lsp-clients-clangd-args '("--log=verbose" "-j=16" "--header-insertion-decorators=0"))
+;;(setq lsp-clients-clangd-args '("-j=16" "--header-insertion-decorators=0"))
+
+;;
+;; Fix clangd -- wow, this took awhile.
+;; Putting it here to survive rebuilds.
+;; Put it into lsp-mode.el after rebuilding (because there's a macro in there that doesn't work out here).
+;; Replace lsp--locations-to-xref-items, and add the other two above it.
+;; Then run M-x emacs-lisp-byte-compile to compile it.
+
+;; (defun lsp--lowercase-loc (loc)
+;;   "See: https://github.com/clangd/clangd/issues/2195 ,
+;; https://github.com/clangd/vscode-clangd/issues/687#issuecomment-2365439284"
+;;   (-let [(filename . matches) loc]
+;;     (cons
+;;      (concat (downcase (substring filename 0 1)) (substring filename 1))
+;;      matches)))
+
+;; (defun lsp--is-dup (left right)
+;;   "Same filename?"
+;;   (string= (car left) (car right)))
+
+;; (defun lsp--locations-to-xref-items (locations)
+;;   "Return a list of `xref-item' given LOCATIONS, which can be of
+;; type Location, LocationLink, Location[] or LocationLink[]."
+;;   (setq locations
+;;         (pcase locations
+;;           ((seq (or (Location)
+;;                     (LocationLink)))
+;;            (append locations nil))
+;;           ((or (Location)
+;;                (LocationLink))
+;;            (list locations))))
+
+;;   (cl-labels ((get-xrefs-in-file
+;;                 (file-locs)
+;;                 (-let [(filename . matches) file-locs]
+;;                   (condition-case err
+;;                       (let ((visiting (find-buffer-visiting filename))
+;;                             (fn (lambda (loc)
+;;                                   (lsp-with-filename filename
+;;                                     (lsp--xref-make-item filename
+;;                                                          (lsp--location-range loc))))))
+;;                         (if visiting
+;;                             (with-current-buffer visiting
+;;                               (seq-map fn matches))
+;;                           (when (file-readable-p filename)
+;;                             (with-temp-buffer
+;;                               (insert-file-contents-literally filename)
+;;                               (seq-map fn matches)))))
+;;                     (error (lsp-warn "Failed to process xref entry for filename '%s': %s"
+;;                                      filename (error-message-string err)))
+;;                     (file-error (lsp-warn "Failed to process xref entry, file-error, '%s': %s"
+;;                                           filename (error-message-string err)))))))
+
+;;     (-as-> locations locs
+;;          (seq-sort #'lsp--location-before-p locs)
+;;          (seq-group-by (-compose #'lsp--uri-to-path #'lsp--location-uri) locs)
+;;          ;; so that we display the nicer relative location, rather than the full path
+;;          (seq-map #'lsp--lowercase-loc locs)
+;;          (cl-remove-duplicates locs :test #'lsp--is-dup)
+;;          (seq-map #'get-xrefs-in-file locs)
+;;          (apply #'nconc locs))))
 
 ;;
 ;; RemedyBg controls
@@ -554,25 +656,45 @@
 (defun remedy-run ()
   (interactive)
   (shell-command "remedybg.exe bring-debugger-to-foreground")
-  (shell-command "remedybg.exe start-debugging"))!
+  (shell-command "remedybg.exe start-debugging"))
 
 (defun remedy-run-to-cursor ()
   (interactive)
   (let* ((name (buffer-file-name))
          (linenum (line-number-at-pos))
-         (command (format "remedybg.exe run-to-cursor %s %d &" name linenum)))
-    (shell-command command)))
+         (command (format "remedybg.exe run-to-cursor %s %d &" name linenum))
+         (prev-cmd compile-command))
+    (progn
+      (shell-command "remedybg.exe bring-debugger-to-foreground")
+      (shell-command command)
+      (setq-local compile-command prev-cmd))))
 
 (defun remedy-open-to-cursor ()
   (interactive)
   (let* ((name (buffer-file-name))
          (linenum (line-number-at-pos))
-         (command (format "remedybg.exe open-file %s %d &" name linenum)))
-    (shell-command command)))
+         (command (format "remedybg.exe open-file %s %d &" name linenum))
+         (prev-cmd compile-command))
+    (progn
+      (shell-command "remedybg.exe bring-debugger-to-foreground")
+      (shell-command command)
+      (setq-local compile-command prev-cmd))))
 
-(map! :map c-ts-mode-map "C-c r r" #'remedy-run)
-(map! :map c-ts-mode-map "C-c r c" #'remedy-run-to-cursor)
-(map! :map c-ts-mode-map "C-c r o" #'remedy-open-to-cursor)
+;; not remedy, but whatever:
+;; TODO: generalize using project local env
+(defun cp/all-run ()
+  (interactive)
+  (let ((default-directory (projectile-project-root))
+        (prev-cmd compile-command))
+    (progn
+      (compile "build\\main.exe test")
+      (setq-local compile-command prev-cmd))))
+
+(map! :map prog-mode-map
+      "C-c r r" #'remedy-run
+      "C-c r c" #'remedy-run-to-cursor
+      "C-c r o" #'remedy-open-to-cursor
+      "C-c r a" #'cp/all-run)
 
 (add-to-list 'display-buffer-alist
   (cons "\\*Async Shell Command\\*.*" (cons #'display-buffer-no-window nil)))
@@ -620,7 +742,6 @@
             (backward-char)))
     (setq end (line-end-position))
     (cons beg end)))
-
 
 ;; This fixes the duplicate lines bug, should be fixed eventually:
 ;; https://github.com/bbatsov/crux/pull/96
@@ -891,7 +1012,7 @@ going through children."
 (global-set-key (kbd "C-k") 'kill-visual-line)
 (global-set-key (kbd "M-Z") 'zap-to-char)
 (global-set-key (kbd "M-z") 'zap-up-to-char)
-;;(global-set-key (kbd "M-<return>") '+default/newline-above)
+(global-set-key (kbd "M-<return>") '+default/newline-above)
 ;; (global-set-key (kbd "C-o") '+default/newline-above)
 ;; (global-set-key (kbd "C-S-o") 'open-line)
 
@@ -927,7 +1048,13 @@ going through children."
   ;; (map! :map org-mode-map "M-[" #'org-metaleft)
   (map! :map org-mode-map "C-e" #'end-of-visual-line))
 
-(map! :map prog-mode-map "M-s" #'+default/search-project)
+(map! :map undo-fu-mode-map "M-_")
+(map! :map prog-mode-map
+      "M-s" #'+default/search-project
+      "M-_" #'+fold/close-all
+      "M-+" #'+fold/open-all
+      "M--" #'+fold/close
+      "M-=" #'+fold/open)
 
 ;;
 ;; Multiple cursors
@@ -974,21 +1101,19 @@ going through children."
 ;;
 ;; Dumb-jump for jai instead of using an ols
 ;;
-;; (use-package! dumb-jump
-;;   :ensure t
-;;   :custom
-;;   (dumb-jump-prefer-searcher 'rg)
-;;   ;; (xref-show-definitions-function #'xref-show-definitions-completing-read)
-;;   ;;(xref-show-definitions-function #'consult-xref)
-;;   (dumb-jump-rg-search-args "--pcre2 --type-add 'jai:*.{jai}'")
-
-;;   :config
-;;   (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
+(load! "dumb-jump.el")
+(after! dumb-jump
+  (setq dumb-jump-prefer-searcher 'rg
+        dumb-jump-force-searcher 'rg
+        dumb-jump-rg-search-args "--pcre2 --type-add \"jai:*.jai\"")
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 
 ;;(setq dumb-jump-debug t)
+;;(setq dumb-jump-debug nil)
+;;(setq dumb-jump-force-searcher nil)
 
 ;;
-;; Show which-function-mode at the top of the screen
+;; Show which-function-mode in the modeline
 ;;
 (which-function-mode)
 ;; (setq-default header-line-format
@@ -1306,32 +1431,35 @@ Return an event vector."
     (set-face-attribute 'org-block nil :background "#2A3339")))
 
 ;;
-;; Customize forestbones
+;; RUN AFTER EVERYTHING (e.g., customize theme, orgmode, settings that get overwritten)
 ;;
-
-(after! forestbones-theme
-  ;;(set-face-attribute 'font-lock-comment-face nil :foreground "#586D36")
-  ;;(set-face-attribute 'font-lock-comment-face nil :foreground "#637B3D")
-  ;;(set-face-attribute 'font-lock-comment-face nil :foreground "#6E8943")
-  (set-face-attribute 'font-lock-comment-face nil :foreground "#6E7B85")
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (progn
+              ;;(set-face-attribute 'font-lock-comment-face nil :foreground "#586D36")
+              ;;(set-face-attribute 'font-lock-comment-face nil :foreground "#637B3D")
+              ;;(set-face-attribute 'font-lock-comment-face nil :foreground "#6E8943")
+              (set-face-attribute 'font-lock-comment-face nil :foreground "#6E7B85")
                                         ;(set-face-attribute 'isearch nil :background "#76875a" :foreground "#F7ECD2")
-  (set-face-attribute 'isearch nil :background "#726C5D" :foreground "#E7DCC4")
+                                        ;(set-face-attribute 'isearch nil :background "#726C5D" :foreground "#E7DCC4")
+              (set-face-attribute 'isearch nil :background "#9E5179" :foreground "#E7DCC4")
                                         ;(set-face-attribute 'lazy-highlight nil :background "#92a375" :foreground "#F7ECD2")
-  (set-face-attribute 'lazy-highlight nil :background "#76875a" :foreground "#F7ECD2")
+              (set-face-attribute 'lazy-highlight nil :background "#76875a" :foreground "#F7ECD2")
 
-  (set-face-attribute 'font-lock-preprocessor-face nil :foreground "#7FBCB4") ;; was red: #E67C7F
-  (set-face-attribute 'font-lock-keyword-face nil :foreground "#B5C49E") ;; was: ...forget green I think
-  (set-face-attribute 'font-lock-type-face nil :foreground "#7FBCB4") ;; was: #DDBD7F A7C080
-  (set-face-attribute 'font-lock-function-name-face nil :foreground "#EDC77A") ;; was: #E7DCC4 EDC77A
-  (set-face-attribute 'font-lock-variable-name-face nil :foreground "#D3C6AA") ;; was: #efcadb D3C6AA
-  (set-face-attribute 'default nil :foreground "#D3C6AA") ;; was: #efcadb D3C6AA e2d5b8
-  (set-face-attribute 'window-divider nil :foreground "gray30")
-  )
+              (set-face-attribute 'font-lock-preprocessor-face nil :foreground "#7FBCB4") ;; was red: #E67C7F
+              (set-face-attribute 'font-lock-keyword-face nil :foreground "#A9C181") ;; was: ...forget green I think, then B5C49E
+              (set-face-attribute 'font-lock-type-face nil :foreground "#7FBCB4") ;; was: #DDBD7F A7C080
+              (set-face-attribute 'font-lock-function-name-face nil :foreground "#EDC77A") ;; was: #E7DCC4 EDC77A
+              (set-face-attribute 'font-lock-variable-name-face nil :foreground "#D3C6AA") ;; was: #efcadb D3C6AA
+              (set-face-attribute 'font-lock-operator-face nil :foreground "#E69875")
+              (set-face-attribute 'window-divider nil :foreground "gray30")
+              (set-face-attribute 'next-error-message nil :background "#3E482D" :foreground "#D3C6AA")
+              (set-face-attribute 'default nil :foreground "#E7DCC4") ;; was: #efcadb D3C6AA e2d5b8
+              (set-face-attribute 'show-paren-match nil :background nil)
+              (set-face-attribute 'markdown-inline-code-face nil :background nil)
+              (set-face-attribute 'markdown-code-face nil :background nil)
+              )))
 
-;; the face in the ui-doc hover, it uses markdown mode
-(after! lsp-ui-doc
-  (set-face-attribute 'markdown-inline-code-face nil :background nil)
-  (set-face-attribute 'markdown-code-face nil :background nil))
 
 (require 'server)
 (unless (eq (server-running-p) 't)
