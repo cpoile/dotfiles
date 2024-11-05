@@ -112,6 +112,7 @@ fi
 ## Settings for mac dev machine
 ##
 if [[ $OSTYPE == darwin* ]]; then
+    . "$HOME/.cargo/env"
 
   function mm-mysql {
       docker exec -ti mattermost-mysql bash -c 'mysql mattermost_test -u mmuser -p'
@@ -316,9 +317,24 @@ if [[ $OSTYPE == linux* ]]; then
   export TERM=xterm-24bit
   export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
   . "$HOME/.atuin/bin/env"
-  xcape -t 300
+
+  ## but not wsl:
+  if ! grep -q "microsoft" /proc/version > /dev/null 2>&1; then
+    xcape -t 300
+    alias ec='emacsclient -nw'
+    . "$HOME/.cargo/env"
+  fi
 fi
 
+
+##
+## WSL  (gets Ubuntu above, plus:)
+##
+if grep -q "microsoft" /proc/version > /dev/null 2>&1; then
+    alias ec='emacsclient.exe -nw'
+    export PATH="/snap/bin:$PATH"
+    export GPG_TTY=$(tty)
+fi
 
 ##
 ## Settings for both mac and linux
@@ -333,7 +349,6 @@ export XDG_CONFIG_HOME="$HOME/.config"
 ##
 alias lg='lazygit'
 alias ll='eza -lah'
-alias ec='emacsclient -nw'
 alias cm='chezmoi'
 alias cmp='chezmoi git pull -- --autostash --rebase && chezmoi diff'
 alias s="kitten ssh"
@@ -349,8 +364,6 @@ autoload -U compinit; compinit
 eval "$(zoxide init --cmd j zsh)"
 
 eval "$(atuin init zsh)"
-
-. "$HOME/.cargo/env"
 
 # Added by Toolbox App
 export PATH="$PATH:/home/chris/.local/share/JetBrains/Toolbox/scripts"
