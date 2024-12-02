@@ -35,12 +35,14 @@
 
 (if (string-equal system-type "windows-nt")
     (progn
-      (setq doom-font (font-spec :family "JetBrainsMono NF Regular" :size 22 :weight 'regular)
+      (setq doom-font (font-spec :family "JetBrainsMono NF Regular" :size 21 :weight 'regular)
             nerd-icons-font-family "JetBrainsMono NF Regular")
+      ;;(setq doom-font (font-spec :family "Iosevka" :size 22 :weight 'normal))
       ;; Remember to run doom env from a windows cmd, not from mingw
       (doom-load-envvars-file "~/.emacs.d/.local/env")))
 
 (setq line-spacing 0)
+(setq isearch-lazy-count t)
 
 ;;
 ;; If you or (Emacs can't find your font, use 'M-x describe-font' to look them
@@ -181,9 +183,6 @@
           (call-interactively #'find-file)
     (projectile-find-file arg)))
 
-(map! :map prog-mode-map
-      "C-q" #'lsp-ui-doc-show)
-
 (map! :map global-map
       "C-x C-f" #'cp/find-file)
 
@@ -192,14 +191,8 @@
 ;;
 
 (load! "jai-mode.el")
-(use-package jai-mode
-  :bind (:map jai-mode-map
-      ;;("C-c C-r" . 'jai-run-project)
-      ;;("C-c C-c" . 'jai-build-project)
-      ("C-c C-r" . 'recompile)
-      ("C-c C-c" . 'compile)))
-
-
+;; using prog-mode-map for all keybindings
+(use-package jai-mode)
 
 (defun jai-previous-defun ()
   "Go to previous proc."
@@ -217,10 +210,7 @@
 
 (map! :map jai-mode-map
       "C-M-e" #'jai-next-defun
-      "C-M-a" #'jai-previous-defun
-      "M-m" #'cp/matching-brace
-      ;;"M-." #'cp/go-to-def-or-ref
-      )
+      "C-M-a" #'jai-previous-defun)
 
 (add-hook 'jai-mode-hook (lambda ()
                            (setq-local indent-tabs-mode nil
@@ -236,20 +226,17 @@
 ;;
 ;; Odin setup
 ;;
+
 (load! "odin-mode.el")
 ;;(package-vc-install "https://git.sr.ht/~mgmarlow/odin-mode")
 (use-package odin-mode
   :bind (:map odin-mode-map
       ;;("C-c C-r" . 'odin-run-project)
       ;;("C-c C-c" . 'odin-build-project)
-      ("C-c C-r" . 'recompile)
-      ("C-c C-c" . 'compile)
-      ("C-c C-t" . 'odin-test-project)
+      ;;("C-c C-r" . 'cp/compile)
+      ;;("C-c C-c" . 'compile)
+      ;;("C-c r t" . 'odin-test-project)
       ))
-
-
-
-
 
 (with-eval-after-load 'lsp-mode
   (add-to-list 'lsp-language-id-configuration
@@ -261,9 +248,15 @@
                       :server-id 'ols
                       :multi-root t)))) ;; This is just so lsp-mode sends the "workspaceFolders" param to the server.
 (add-hook 'odin-mode-hook #'lsp)
-;; (after! compile
-;;   (add-to-list 'compilation-error-regexp-alist-alist '(odin "^\\([A-Za-z0-9\\._/-]+\\)(\\([0-9]+\\):\\([0-9]+\\))" 1 2 3))
-;;   (add-to-list 'compilation-error-regexp-alist 'odin))
+;;(remove-hook 'odin-mode-hook #'lsp)
+(after! compile
+  (add-to-list 'compilation-error-regexp-alist-alist '(odin "\\[\\([A-Za-z_]+\\.odin\\):\\([0-9]+\\):" 1 2 3))
+  (add-to-list 'compilation-error-regexp-alist 'odin))
+
+;; Remove annoying lsp crap:
+;(setq lsp-ui-sideline-show-diagnostics t)
+;(setq lsp-diagnostics-provider :auto)
+
 
 (add-hook 'odin-mode-hook (lambda ()
                             (setq comment-start "//"
@@ -272,26 +265,36 @@
                             ;; (setq indent-line-function 'relative-line-indent)
                             (setq lsp-ui-doc-max-height 40)
                             (setq lsp-ui-doc-max-width 150)
-                            ))
+                            (lsp)
+                            (lsp-completion-mode -1)
+                            (setq-local
+                             flycheck-check-syntax-automatically '(mode-enabled save)
+                             block-comment-start "//"
+                             block-comment-end ""
+                             )))
+
+;(remove-hook 'odin-mode-hook (car odin-mode-hook))
+
 
 ;; Should be in an after! macro, but we're definitely loading it above, so:
-(defun odin-previous-defun ()
+(defun odin-previous-defun-or-struct ()
   "Go to previous proc."
   (interactive)
   (beginning-of-line)
-  (re-search-backward odin--defun-rx)
+  (re-search-backward odin-proc-or-struct-rx)
   (beginning-of-line))
 
-(defun odin-next-defun ()
+
+(defun odin-next-defun-or-struct ()
   "Go to next proc."
   (interactive)
-  (forward-line)
-  (re-search-forward odin--defun-rx)
+  (end-of-line)
+  (re-search-forward odin-proc-or-struct-rx nil t)
   (beginning-of-line))
 
 (map! :map odin-mode-map
-      "C-M-e" #'odin-next-defun
-      "C-M-a" #'odin-previous-defun
+      "C-M-e" #'odin-next-defun-or-struct
+      "C-M-a" #'odin-previous-defun-or-struct
       "C-M-l" #'lsp-format-buffer)
 
 
@@ -299,13 +302,13 @@
 ;; Programming remapping
 ;;
 
-;; Intellij switch frame hotkey
-(map! :map global-map
-      "C-x f" #'+workspace/switch-to
+;; remove c-i = tab
+(define-key input-decode-map [?\C-i] [C-i])
+;; replace with expand region
+(global-set-key (kbd "<C-i>") 'er/expand-region)
 
-      ;; tired of reaching for ctrl-=
-      "C-i" #'er/expand-region
-      )
+(map! :map global-map
+      "C-x f" #'+workspace/switch-to)
 
 ;;
 ;; Perspective -- put most recently used persp on top -- doesn't work, abandoned.
@@ -329,12 +332,12 @@
 ;; Perspective mode -- autoload dotfiles
 ;;
 
-(after! persp-mode
-  (add-hook 'persp-mode-hook
-            (lambda ()
-              (interactive)
-              (doom/quickload-session t)
-              (+workspace/switch-to "dotfiles"))))
+;;(after! persp-mode
+;;  (add-hook 'persp-mode-hook
+;;          (lambda ()
+;;              (interactive)
+;;              (doom/quickload-session t)
+;;              (+workspace/switch-to "dotfiles"))))
 
 ;;
 ;; Misc settings
@@ -525,35 +528,13 @@
                  (point)))
         (funcall prev 2))))
 
-;;
-;; To go to matching brace with a single key
-;;
-
-(defun cp/matching-brace ()
-  (interactive)
-  (if (= (char-before) ?\})
-      (sp-backward-sexp)
-    (if (= (char-after) ?\{)
-        (sp-forward-sexp)
-      (sp-backward-up-sexp))))
-
-(defun cp/go-to-def-or-ref ()
-  (interactive)
-  (let ((cur (line-number-at-pos)))
-    (if (= cur (progn
-             (+lookup/definition (point))
-             (line-number-at-pos)))
-        (+lookup/references (point)))))
-
 (map! :map c-ts-mode-map
       ;"C-q" #'+lookup/documentation
       "C-M-l" #'lsp-format-buffer
       "C-c C-c" #'compile
       "C-c C-r" #'recompile
       "C-M-a" #'cp/c-ts-previous-defun
-      "C-M-e" #'cp/c-ts-next-defun
-      "M-m" #'cp/matching-brace
-      "M-." #'cp/go-to-def-or-ref)
+      "C-M-e" #'cp/c-ts-next-defun)
 
 ;; TODO: make it so that using C-u shows all buffers (except that's used... so, something else)
 (map! "C-x C-b" #'(lambda (arg)
@@ -656,18 +637,28 @@
 (defun remedy-run ()
   (interactive)
   (shell-command "remedybg.exe bring-debugger-to-foreground")
-  (shell-command "remedybg.exe start-debugging"))
+  (async-shell-command "remedybg.exe start-debugging")
+  ;;(make-process "*remedy-out*" "*remedy-out*" "cmd.exe" "-c" "remedybg.exe start-debugging")
+  )
 
 (defun remedy-run-to-cursor ()
   (interactive)
   (let* ((name (buffer-file-name))
          (linenum (line-number-at-pos))
-         (command (format "remedybg.exe run-to-cursor %s %d &" name linenum))
-         (prev-cmd compile-command))
+         (command (format "remedybg.exe run-to-cursor %s %d &" name linenum)))
     (progn
-      (shell-command "remedybg.exe bring-debugger-to-foreground")
+      (message (format "running: %s" command))
       (shell-command command)
-      (setq-local compile-command prev-cmd))))
+      (shell-command "remedybg.exe bring-debugger-to-foreground"))))
+
+(defun raddbg-run-to-cursor ()
+  (interactive)
+  (let* ((name (buffer-file-name))
+         (linenum (line-number-at-pos))
+         (command (format "raddbg --ipc run_to_line %s:%d &" name linenum)))
+    (progn
+      (message (format "running: %s" command))
+      (shell-command command))))
 
 (defun remedy-open-to-cursor ()
   (interactive)
@@ -676,28 +667,110 @@
          (command (format "remedybg.exe open-file %s %d &" name linenum))
          (prev-cmd compile-command))
     (progn
-      (shell-command "remedybg.exe bring-debugger-to-foreground")
       (shell-command command)
+      (shell-command "remedybg.exe bring-debugger-to-foreground")
       (setq-local compile-command prev-cmd))))
 
-;; not remedy, but whatever:
-;; TODO: generalize using project local env
-(defun cp/all-run ()
+;; add to your project's .dir-locals.el, eg.
+;; ((jai-mode . ((custom-compile-cmd . "c:/Users/Chris/git/jai/writing-an-interpreter/make.bat")
+;;               (custom-run-all-cmd . "c:/Users/Chris/git/jai/writing-an-interpreter/build/main.exe")
+;;               (custom-run-test-cmd . "c:/Users/Chris/git/jai/writing-an-interpreter/build/main.exe test"))))
+
+(defun cp/compile ()
   (interactive)
-  (let ((default-directory (projectile-project-root))
-        (prev-cmd compile-command))
-    (progn
-      (compile "build\\main.exe test")
-      (setq-local compile-command prev-cmd))))
+  (if (boundp 'custom-compile-cmd)
+      (compile custom-compile-cmd)
+    (call-interactively 'compile)))
+
+(defun cp/run-all ()
+  (interactive)
+  (if (boundp 'custom-run-all-cmd)
+      (compile custom-run-all-cmd)
+    (call-interactively 'compile)))
+
+;; (defun cp/run-tests ()
+;;   (interactive)
+;;   (if (and (boundp 'custom-run-test-cmd) (boundp 'custom-compile-cmd))
+;;       (progn
+;;         (compile custom-compile-cmd)
+;;         (compilation-start custom-run-test-cmd nil nil nil t))
+;;     (if (boundp 'custom-run-test-cmd)
+;;         (compile custom-run-test-cmd))
+;;     (call-interactively 'compile)))
+
+(defun cp/run-tests ()
+  (interactive)
+    (if (boundp 'custom-run-test-cmd)
+        (compile custom-run-test-cmd)
+    (call-interactively 'compile)))
+
+;;
+;; To go to matching brace with a single key
+;;
+
+(defun cp/matching-brace ()
+  (interactive)
+  (push-mark)
+  (if (= (char-before) ?\})
+      (sp-backward-sexp)
+    (if (= (char-after) ?\{)
+        (sp-forward-sexp)
+      (if (= (char-before) ?\{)
+          (progn (backward-char)
+                 (sp-forward-sexp))
+        (sp-backward-up-sexp)))))
+
+(defun cp/go-to-def-or-ref ()
+  (interactive)
+  (let ((cur (line-number-at-pos)))
+    (if (= cur (progn
+                 (call-interactively '+lookup/definition)
+                 (line-number-at-pos)))
+        (call-interactively '+lookup/references))))
+
+(defun cp/tab-dwim ()
+  "Call dabbrev-expand if point is within a word,
+    otherwise call normal tab command."
+  (interactive)
+  (if (looking-back "\\w" (1- (point)))
+      ;;(dabbrev-expand nil)
+      (+company/complete)
+    (indent-for-tab-command)))
+
+;; tab was indent-for-tab-command
+;;(global-set-key (kbd "TAB") 'cp/tab-dwim)
 
 (map! :map prog-mode-map
-      "C-c r r" #'remedy-run
-      "C-c r c" #'remedy-run-to-cursor
-      "C-c r o" #'remedy-open-to-cursor
-      "C-c r a" #'cp/all-run)
+      "C-c C-c"    #'compile
+      "C-c C-r"    #'cp/compile
+      "C-c r a"    #'cp/run-all
+      "C-c r t"    #'cp/run-tests
+      "C-c r r"    #'remedy-run
+      "C-c r c"    #'remedy-run-to-cursor
+      ;;"C-c r c"    #'raddbg-run-to-cursor
+      "C-c r o"    #'remedy-open-to-cursor
+      "C-q"        #'lsp-ui-doc-show
+      "M-s"        #'+default/search-project
+      "M-_"        #'+fold/close-all
+      "M-+"        #'+fold/open-all
+      "M--"        #'+fold/close
+      "M-="        #'+fold/open
+      "M-m"        #'cp/matching-brace
+      "M-."        #'cp/go-to-def-or-ref
+      "M-<return>" #'+default/newline-above
+      "<tab>"      #'cp/tab-dwim
+      "M-i"        #'consult-imenu
+      )
 
-(add-to-list 'display-buffer-alist
-  (cons "\\*Async Shell Command\\*.*" (cons #'display-buffer-no-window nil)))
+
+(defun cp/remove-hat-M ()
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward "\^M$" nil t)
+      (replace-match "" nil nil))))
+
+(advice-add 'diff-hl-revert-hunk :after #'cp/remove-hat-M)
 
 ;;
 ;; Customize zenburn
@@ -916,9 +989,11 @@ going through children."
 (defun cp/move-buffer-to-other-window ()
   "Move the current buffer to the other window"
   (interactive)
-  (let ((current-buffer (buffer-name)))
+  (let ((current-buffer (buffer-name))
+        (pos (point)))
     (bury-buffer)
-    (switch-to-buffer-other-window current-buffer)))
+    (switch-to-buffer-other-window current-buffer)
+    (goto-char pos)))
 
 ;; Misc fixes
 
@@ -937,7 +1012,10 @@ going through children."
 ;; see: https://emacs.stackexchange.com/questions/48871/how-to-enable-company-mode-for-some-buffers-only
 (after! company
   (global-company-mode -1)
-  (setq company-global-modes '(not org-mode)))
+  (setq company-global-modes '(not org-mode))
+  (setq company-idle-delay nil)
+  (map! :map company-active-map "<tab>" #'company-complete-selection)
+  )
 
 
 ;; and make txt files use paragraph indents as the paragraph breaks.
@@ -961,12 +1039,150 @@ going through children."
    (let ((buffer-modified-p nil))
      (kill-buffer (current-buffer))))
 
-(defun cp/frame-resize-init (&optional arg)
-  "set the frame size for editing using emacs chrome (it always starts too small)"
-  (when (display-graphic-p arg)
-    (set-frame-size arg 80 24)))
+;; (defun cp/frame-resize-init (&optional arg)
+;;   "set the frame size for editing using emacs chrome (it always starts too small)"
+;;   (when (display-graphic-p arg)
+;;     (set-frame-size arg 80 24)))
 
-(add-hook 'after-make-frame-functions 'cp/frame-resize-init)
+;; (add-hook 'after-make-frame-functions 'cp/frame-resize-init)
+
+(defun cp/frame-scroll-bar (&optional arg)
+  "turn on the scroll bar"
+  (when (display-graphic-p)
+    (set-scroll-bar-mode t)))
+(add-hook 'after-make-frame-functions 'cp/frame-scroll-bar)
+(set-scroll-bar-mode t)
+
+;;
+;; Treemacs
+;;
+;; (use-package treemacs
+;;   :ensure t
+;;   :defer t
+;;   :init
+;;   (with-eval-after-load 'winum
+;;     (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
+;;   :config
+;;   (progn
+;;     (setq treemacs-collapse-dirs                   (if treemacs-python-executable 3 0)
+;;           treemacs-deferred-git-apply-delay        0.5
+;;           treemacs-directory-name-transformer      #'identity
+;;           treemacs-display-in-side-window          t
+;;           treemacs-eldoc-display                   'simple
+;;           treemacs-file-event-delay                2000
+;;           treemacs-file-extension-regex            treemacs-last-period-regex-value
+;;           treemacs-file-follow-delay               0.2
+;;           treemacs-file-name-transformer           #'identity
+;;           treemacs-follow-after-init               t
+;;           treemacs-expand-after-init               t
+;;           treemacs-find-workspace-method           'find-for-file-or-pick-first
+;;           treemacs-git-command-pipe                ""
+;;           treemacs-goto-tag-strategy               'refetch-index
+;;           treemacs-header-scroll-indicators        '(nil . "^^^^^^")
+;;           treemacs-hide-dot-git-directory          t
+;;           treemacs-indentation                     2
+;;           treemacs-indentation-string              " "
+;;           treemacs-is-never-other-window           t
+;;           treemacs-max-git-entries                 5000
+;;           treemacs-missing-project-action          'ask
+;;           treemacs-move-files-by-mouse-dragging    t
+;;           treemacs-move-forward-on-expand          nil
+;;           treemacs-no-png-images                   nil
+;;           treemacs-no-delete-other-windows         t
+;;           treemacs-project-follow-cleanup          nil
+;;           treemacs-persist-file                    (expand-file-name ".cache/treemacs-persist" user-emacs-directory)
+;;           treemacs-position                        'left
+;;           treemacs-read-string-input               'from-child-frame
+;;           treemacs-recenter-distance               0.1
+;;           treemacs-recenter-after-file-follow      nil
+;;           treemacs-recenter-after-tag-follow       nil
+;;           treemacs-recenter-after-project-jump     'always
+;;           treemacs-recenter-after-project-expand   'on-distance
+;;           treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask")
+;;           treemacs-project-follow-into-home        nil
+;;           treemacs-show-cursor                     nil
+;;           treemacs-show-hidden-files               t
+;;           treemacs-silent-filewatch                nil
+;;           treemacs-silent-refresh                  nil
+;;           treemacs-sorting                         'alphabetic-asc
+;;           treemacs-select-when-already-in-treemacs 'move-back
+;;           treemacs-space-between-root-nodes        t
+;;           treemacs-tag-follow-cleanup              t
+;;           treemacs-tag-follow-delay                1
+;;           treemacs-text-scale                      -1
+;;           treemacs-user-mode-line-format           nil
+;;           treemacs-user-header-line-format         nil
+;;           treemacs-wide-toggle-width               70
+;;           treemacs-width                           22
+;;           treemacs-width-increment                 1
+;;           treemacs-width-is-initially-locked       t
+;;           treemacs-workspace-switch-cleanup        nil)
+
+;;     ;; The default width and height of the icons is 22 pixels. If you are
+;;     ;; using a Hi-DPI display, uncomment this to double the icon size.
+;;     ;;(treemacs-resize-icons 44)
+
+;;     (treemacs-follow-mode t)
+;;     (treemacs-project-follow-mode t)
+;;     (treemacs-filewatch-mode t)
+;;     (treemacs-fringe-indicator-mode 'always)
+;;     (when treemacs-python-executable
+;;       (treemacs-git-commit-diff-mode t))
+
+;;     (pcase (cons (not (null (executable-find "git")))
+;;                  (not (null treemacs-python-executable)))
+;;       (`(t . t)
+;;        (treemacs-git-mode 'deferred))
+;;       (`(t . _)
+;;        (treemacs-git-mode 'simple)))
+
+;;     (treemacs-hide-gitignored-files-mode nil))
+;;   :bind
+;;   (:map global-map
+;;         ("M-0"       . treemacs-select-window)
+;;         ;("C-x t 1"   . treemacs-delete-other-windows)
+;;         ("s-1"   . treemacs)
+;;         ("C-x t d"   . treemacs-select-directory)
+;;         ("C-x t B"   . treemacs-bookmark)
+;;         ("C-x t C-t" . treemacs-find-file)
+;;         ("C-x t M-t" . treemacs-find-tag)))
+
+;; (use-package treemacs-projectile
+;;   :after (treemacs projectile)
+;;   :ensure t)
+
+;; (use-package treemacs-icons-dired
+;;   :hook (dired-mode . treemacs-icons-dired-enable-once)
+;;   :ensure t)
+
+;; (use-package treemacs-magit
+;;   :after (treemacs magit)
+;;   :ensure t)
+
+
+(after! treemacs
+
+    (map! :map global-map "s-1" #'treemacs))
+
+(use-package treemacs
+  :ensure t
+  :defer t
+  :config
+  (progn
+    (setq treemacs-text-scale    0
+          treemacs-width         20
+          treemacs-no-png-images t )
+    (treemacs-resize-icons 18))
+    :bind
+  (:map global-map
+        ;("M-0"       . treemacs-select-window)
+        ;("C-x t 1"   . treemacs-delete-other-windows)
+        ("s-1"   . treemacs)
+        ;("C-x t d"   . treemacs-select-directory)
+        ;("C-x t B"   . treemacs-bookmark)
+        ;("C-x t C-t" . treemacs-find-file)
+        ;("C-x t M-t" . treemacs-find-tag)
+        ))
 
 ;;
 ;; Keybindings
@@ -996,12 +1212,17 @@ going through children."
 (map! "M-{" #'back-button-local-backward)
 (map! "M-}" #'back-button-local-forward)
 
+(after! nav-flash
+  (setq nav-flash-delay 0))
+
 ;; because those conflict in org-mode, backup
 (map! "C-c d" #'crux-duplicate-current-line-or-region)
 (map! "C-M-j" #'crux-top-join-line)
 
 (map! "C-x C-o" #'cp/copy-buffer-to-other-window)
 (map! "C-x O" #'cp/move-buffer-to-other-window)
+(map! "C-c <right>" #'windmove-swap-states-right)
+(map! "C-c <left>" #'windmove-swap-states-left)
 
 ;; TODO: convert the following to map! macros?
 ;;
@@ -1012,7 +1233,6 @@ going through children."
 (global-set-key (kbd "C-k") 'kill-visual-line)
 (global-set-key (kbd "M-Z") 'zap-to-char)
 (global-set-key (kbd "M-z") 'zap-up-to-char)
-(global-set-key (kbd "M-<return>") '+default/newline-above)
 ;; (global-set-key (kbd "C-o") '+default/newline-above)
 ;; (global-set-key (kbd "C-S-o") 'open-line)
 
@@ -1049,25 +1269,53 @@ going through children."
   (map! :map org-mode-map "C-e" #'end-of-visual-line))
 
 (map! :map undo-fu-mode-map "M-_")
-(map! :map prog-mode-map
-      "M-s" #'+default/search-project
-      "M-_" #'+fold/close-all
-      "M-+" #'+fold/open-all
-      "M--" #'+fold/close
-      "M-=" #'+fold/open)
 
 ;;
 ;; Multiple cursors
 ;;
+
+(defun mc-mark-next-like-this-symbol-then-cycle-forward (arg)
+  "Mark next like this then cycle forward, take interactive ARG."
+  (interactive "p")
+  (call-interactively 'mc/mark-next-like-this-symbol)
+  (call-interactively 'mc/cycle-forward))
+
+(defun mc-skip-to-next-like-this-then-cycle-forward (arg)
+  "Skip to next like this then cycle forward, take interactive ARG."
+  (interactive "p")
+  (call-interactively 'mc/cycle-backward)
+  (call-interactively 'mc/skip-to-next-like-this)
+  (call-interactively 'mc/cycle-forward))
+
+(defun mc-mark-previous-like-this-then-cycle-backward (arg)
+  "Mark previous like this then cycle backward take interactive ARG."
+  (interactive "p")
+  (call-interactively 'mc/mark-previous-like-this)
+  (call-interactively 'mc/cycle-backward))
+
+(defun mc-skip-to-previous-like-this-then-cycle-backward (arg)
+  "Skip to previous like this then cycle backward take interactive ARG."
+  (interactive "p")
+  (call-interactively 'mc/cycle-forward)
+  (call-interactively 'mc/skip-to-previous-like-this)
+  (call-interactively 'mc/cycle-backward))
+
+(defun mc-unmark-current (arg)
+  (interactive "p")
+  (call-interactively 'mc/cycle-backward)
+  (call-interactively 'mc/unmark-next-like-this)
+  (call-interactively 'mc/skip-to-next-like-this))
+
 (use-package! multiple-cursors
   :ensure   t
   :bind (("C-M-SPC" . set-rectangular-region-anchor)
          ("C-M->" . mc/mark-next-like-this)
          ("C-M-<" . mc/mark-previous-like-this)
-         ("C-c C-." . mc/mark-all-like-this)
+         ("C-c C-." . mc/mark-all-like-this-in-defun)
          ("C-c C-SPC" . mc/edit-lines)
-         ("M-j" . mc/mark-next-like-this-symbol)
-         ("M-J" .  mc/unmark-next-like-this)))
+         ("M-j" . mc-mark-next-like-this-symbol-then-cycle-forward)
+         ("M-J" .  mc-unmark-current)
+         ("M-C-S-j" . mc-skip-to-next-like-this-then-cycle-forward)))
 
 ;; Now C-x SPC will be rectangle mark mode
 (after! back-button
@@ -1111,6 +1359,61 @@ going through children."
 ;;(setq dumb-jump-debug t)
 ;;(setq dumb-jump-debug nil)
 ;;(setq dumb-jump-force-searcher nil)
+
+;;
+;; XRef jumps should recenter nearer to the top of the window so we can see more of the function
+;;
+;; only for new buffers:
+;; (defun cp/xref-recenter-in-new-buffer (func &rest args)
+;;   (let ((original-buf (current-buffer)))
+;;     (apply func args)
+;;     (unless (eq (current-buffer) original-buf)
+;;       (recenter-top-bottom 20))))
+
+;; all buffers:
+(defun cp/jump-recenter (func &rest args)
+  (interactive)
+  (let ((cur (line-number-at-pos)))
+    (if (not (= cur (progn
+                      (apply func args)
+                      (line-number-at-pos))))
+        (recenter-top-bottom 24))))
+
+(advice-add 'cp/go-to-def-or-ref :around 'cp/jump-recenter)
+
+
+;;
+;; NOTE: this is so that if we goto next-error and the resulting error is displayed in our current window,
+;;       but the other window already had that file open, move the buffer the other window.
+;;       This is kind of hacky. It would probably be better to change the compilation-goto-locus itself.
+
+(defun get-next-non-temp-buffer-window ()
+  "Return the next window not displaying a temporary buffer."
+  (seq-find
+   (lambda (win)
+     (and (not (eq win (selected-window)))
+          (not (string-match "^[ *]" (buffer-name (window-buffer win))))))
+   (window-list nil 'f)))
+
+(defun cp/next-error (func &rest args)
+  (interactive)
+    ;; for debugging:
+    ;; (message (format "after! other buf: %s  cur buf: %s  window-list: %s"
+    ;;                  (buffer-file-name (window-buffer (get-next-non-temp-buffer-window)))
+    ;;                  (buffer-file-name (current-buffer))
+    ;;                  (window-list nil 'f)))
+    (if (string= (buffer-file-name (window-buffer (get-next-non-temp-buffer-window)))
+                 (buffer-file-name (current-buffer)))
+        (cp/move-buffer-to-other-window)))
+
+(advice-add 'compilation-goto-locus :after #'cp/next-error)
+
+;;
+;;(advice-remove 'next-error #'cp/next-error)
+;;
+;; Do the same for consult-imenu
+;;
+(advice-add 'consult-imenu :around 'cp/jump-recenter)
 
 ;;
 ;; Show which-function-mode in the modeline
@@ -1220,7 +1523,10 @@ going through children."
 
 (if (string-equal system-type "windows-nt")
     (progn
-      (toggle-frame-maximized (window-frame))))
+      (toggle-frame-maximized (window-frame))
+      (setq default-frame-alist '((scroll-bar-width . 6)))))
+
+;;(set-frame-parameter (selected-frame) 'scroll-bar-width 6)
 
 ;;
 ;; xterm crap
@@ -1275,7 +1581,7 @@ Return an event vector."
 ;; Tree-sitter
 ;;
 ;; Should use:
-;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
+;;(mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
 ;; ;;at least once per installation or while changing this list
 ;; (setq treesit-language-source-alist
 ;;       '((bash "https://github.com/tree-sitter/tree-sitter-bash")
@@ -1303,6 +1609,12 @@ Return an event vector."
 ;; (setq treesit-language-source-alist
 ;;       '((c "https://github.com/tree-sitter/tree-sitter-c")
 ;;         (cpp "https://github.com/tree-sitter/tree-sitter-cpp")))
+;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
+
+;; to install for jai:
+;;
+;; (setq treesit-language-source-alist
+;;       '((jai "https://github.com/SogoCZE/tree-sitter-jai")))
 ;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
 
 (add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
@@ -1410,6 +1722,15 @@ Return an event vector."
   (interactive)
   (ansi-color-apply-on-region (point-min) (point-max)))
 
+;(add-hook 'compilation-filter-hook 'ansi-color-compilation-filter) ;; doesn't work?
+
+;(setq compilation-max-output-line-length nil)
+
+;; (defun colorize-compilation-buffer ()
+;;   (ansi-color-apply-on-region compilation-filter-start (point)))
+;; (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
+;;(remove-hook 'compilation-filter-hook 'colorize-compilation-buffer)
+
  ;; (setq default-frame-alist '((width . 50)
  ;;                             (height . 100)
  ;;                             (menu-bar-lines . 0)
@@ -1425,15 +1746,57 @@ Return an event vector."
 ;; does it need to be required?
 ;;(require 'olivetti)
 
-;; Works at the end?
-(after! org
-  (with-eval-after-load 'org-faces
-    (set-face-attribute 'org-block nil :background "#2A3339")))
+
+;;
+;; ediff region with clipboard
+;;
+
+(defun cp/ediff-region-with-clipboard ()
+  "Compare the selected region with the contents of the system clipboard using ediff."
+  (interactive)
+  (unless (region-active-p)
+    (error "No region selected"))
+
+  (let* ((region-text (buffer-substring-no-properties (region-beginning) (region-end)))
+         (clipboard-text (current-kill 0))
+         (buf1 (generate-new-buffer "*Region*"))
+         (buf2 (generate-new-buffer "*Clipboard*")))
+
+    (with-current-buffer buf1
+      (insert region-text)
+      (visual-line-mode 1))
+
+    (with-current-buffer buf2
+      (insert clipboard-text)
+      (visual-line-mode 1))
+
+    (ediff-buffers buf1 buf2)))
+
+(defun cp/kill-ediff-buffers ()
+  (let ((bufA (buffer-name ediff-buffer-A))
+        (bufB (buffer-name ediff-buffer-B))
+        (bufC (buffer-name ediff-buffer-C))
+        (reg "^\\*.*\\*$"))
+    (if (string-match reg bufA)
+        (kill-buffer ediff-buffer-A))
+    (if (string-match reg bufB)
+        (kill-buffer ediff-buffer-B))
+    (if (string-match reg bufC)
+        (kill-buffer ediff-buffer-C))))
+
+(add-hook 'ediff-quit-hook 'cp/kill-ediff-buffers)
+
+(global-set-key (kbd "C-c C-d") 'cp/ediff-region-with-clipboard)
+
+;(remove-hook 'ediff-quit-hook (car ediff-quit-hook))
+
+(after! dired
+  (add-hook 'dired-mode-hook (lambda () (dired-omit-mode -1))))
 
 ;;
 ;; RUN AFTER EVERYTHING (e.g., customize theme, orgmode, settings that get overwritten)
 ;;
-(add-hook 'emacs-startup-hook
+(add-hook 'after-init-hook
           (lambda ()
             (progn
               ;;(set-face-attribute 'font-lock-comment-face nil :foreground "#586D36")
@@ -1455,11 +1818,24 @@ Return an event vector."
               (set-face-attribute 'window-divider nil :foreground "gray30")
               (set-face-attribute 'next-error-message nil :background "#3E482D" :foreground "#D3C6AA")
               (set-face-attribute 'default nil :foreground "#E7DCC4") ;; was: #efcadb D3C6AA e2d5b8
+              (set-face-attribute 'scroll-bar nil :foreground "#6E7B85" :background "#242D34")  ;; doesn't work in windows
               (set-face-attribute 'show-paren-match nil :background nil)
-              (set-face-attribute 'markdown-inline-code-face nil :background nil)
-              (set-face-attribute 'markdown-code-face nil :background nil)
-              )))
-
+              (after! diff-mode
+                (set-face-attribute 'diff-refine-removed nil :background "#E7DCC4" :foreground "#522e2f") ;;#643839 #724041
+                (set-face-attribute 'diff-refine-added nil :background "#E7DCC4" :foreground "#444e31")
+                ;;(set-face-attribute 'diff-refine-changed nil :background "#E7DCC4" :foreground "#304946")
+                (set-face-attribute 'diff-removed nil :background "#311b1c" :foreground "#E7DCC4")
+                (set-face-attribute 'diff-added nil :background "#3E482D" :foreground "#E7DCC4")
+                )
+              (after! markdown-mode
+                (set-face-attribute 'markdown-inline-code-face nil :background nil)
+                (set-face-attribute 'markdown-code-face nil :background nil))
+              (add-to-list 'display-buffer-alist
+                           (cons "\\*Async Shell Command\\*.*" (cons #'display-buffer-no-window nil)))
+              (set-face-attribute 'org-block nil :background "#2A3339")
+              (message "finished after init-setup")
+              )
+            ))
 
 (require 'server)
 (unless (eq (server-running-p) 't)

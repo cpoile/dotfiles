@@ -49,8 +49,11 @@
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;(unpin! t)
 
-(package! transient :pin "c2bdf7e12c530eb85476d3aef317eb2941ab9440")
-(package! with-editor :pin "bbc60f68ac190f02da8a100b6fb67cf1c27c53ab")
+;;(package! transient :pin "c2bdf7e12c530eb85476d3aef317eb2941ab9440")
+(package! magit :pin "0aa26864e3fc4e6949711a4821caf6819e7ab171")
+(package! compat :pin "9a234d0")
+(package! transient :pin "3430943eaa3222cd2a487d4c102ec51e10e7e3c9")
+;(package! with-editor :pin "bbc60f68ac190f02da8a100b6fb67cf1c27c53ab")
 (package! smartrep)
 (package! back-button)
 (package! visible-mark)
@@ -75,3 +78,7 @@
 
 (package! olivetti
   :recipe (:host github :repo "rnkn/olivetti"))
+;; (package! treemacs)
+;; (package! treemacs-projectile)
+;; (package! treemacs-icons-dired)
+;; (package! treemacs-magit)

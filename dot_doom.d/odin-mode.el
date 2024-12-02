@@ -78,12 +78,16 @@
 
 (defconst odin-keywords
   '("import" "foreign" "package"
-    "where" "when" "if" "else" "for" "switch" "in" "notin" "do" "case"
+    "where" "when" "if" "else" "for" "switch" "in" "not_in" "do" "case"
     "break" "continue" "fallthrough" "defer" "return" "proc"
     "struct" "union" "enum" "bit_field" "bit_set" "map" "dynamic"
     "auto_cast" "cast" "transmute" "distinct" "opaque"
     "using" "inline" "no_inline"
     "size_of" "align_of" "offset_of" "type_of"
+    "or_else" "or_return" "or_continue" "or_break"
+
+    ;; I like to see these as "keywords"
+    "nil" "true" "false"
 
     "context"
     ;; "_"
@@ -92,8 +96,7 @@
     "macro" "const"))
 
 (defconst odin-constants
-  '("nil" "true" "false"
-    "ODIN_OS" "ODIN_ARCH" "ODIN_ENDIAN" "ODIN_VENDOR"
+  '("ODIN_OS" "ODIN_ARCH" "ODIN_ENDIAN" "ODIN_VENDOR"
     "ODIN_VERSION" "ODIN_ROOT" "ODIN_DEBUG"))
 
 (defconst odin-typenames
@@ -187,8 +190,9 @@
        symbol-end)))
 (defconst odin-proc-rx (concat "\\(\\_<" odin-identifier-rx "\\_>\\)\\s *::\\s *\\(" (odin-directives-rx odin-proc-directives) "\\)?\\s *\\_<proc\\_>"))
 
-(defconst odin-type-rx (concat "\\_<\\(" odin-identifier-rx "\\)\\s *::\\s *\\(?:struct\\|enum\\|union\\|distinct\\)\\s *\\_>"))
+(defconst odin-proc-or-struct-rx (concat "\\(\\_<" odin-identifier-rx "\\_>\\)\\s *::\\s *\\(" (odin-directives-rx odin-proc-directives) "\\)?\\s *\\(\\_<proc\\_>\\|\\_<struct\\_>\\)"))
 
+(defconst odin-type-rx (concat "\\_<\\(" odin-identifier-rx "\\)\\s *::\\s *\\(?:struct\\|enum\\|union\\|distinct\\)\\s *\\_>"))
 
 (defconst odin-font-lock-defaults
   `(
@@ -235,7 +239,8 @@
   (defmacro setq-local (var val)
     `(set (make-local-variable ',var) ,val)))
 
-(defconst odin--defun-rx "\(.*\).*\{")
+;; Why was this used?
+;;(defconst odin--defun-rx "\(.*\).*\{")
 
 (defmacro odin-paren-level ()
   `(car (syntax-ppss)))
@@ -247,7 +252,8 @@
     (beginning-of-line)
     (let (found)
       (while (and (not (eolp)) (not found))
-        (if (looking-at odin--defun-rx)
+        ;;(if (looking-at odin--defun-rx)  ;; original
+        (if (looking-at odin-proc-rx)
             (setq found t)
           (forward-char 1)))
       found)))

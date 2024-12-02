@@ -100,7 +100,8 @@
        symbol-end)))
 (defconst jai-identifier-rx "[[:word:][:multibyte:]_]+")
 (defconst jai--defun-rx "\(.*\).*\{")  ;; original
-(defconst jai-proc-rx (concat "\\(\\_<" jai-identifier-rx "\\_>\\)\\s *::\\s *\(.*\).*\{"))
+(defconst jai-proc-rx (concat "\\(\\_<" jai-identifier-rx "\\_>\\)\\s *::\\s *\\(?:inline\\)? *(.*).*{"))
+(defconst jai-proc-decl-rx (concat "\\(\\_<" jai-identifier-rx "\\_>\\)\\s *::\\s *\\(?:inline\\)? *(.*).*;"))
 (defconst jai-pointer-rx "\\*")
 
 ;; TODO: fix for jai's actual idents later
@@ -118,6 +119,7 @@
 
     ;; Function names
     (,jai-proc-rx 1 font-lock-function-name-face)
+    (,jai-proc-decl-rx 1 font-lock-function-name-face)
 
     ;; Hash directives
     ("#\\w+" . font-lock-preprocessor-face)
@@ -230,8 +232,8 @@
   (setq-local end-of-defun-function 'jai-end-of-defun)
   (setq-local electric-indent-chars
               (append "{}():;," electric-indent-chars))
-  (setq-local indent-tabs-mode t)
-  (setq-local tab-width 2)
+  (setq-local indent-tabs-mode nil)
+  (setq-local tab-width 4)
 
   ;; add indent functionality to some characters
   (jai--add-self-insert-hooks)
