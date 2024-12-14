@@ -82,3 +82,5 @@
 ;; (package! treemacs-projectile)
 ;; (package! treemacs-icons-dired)
 ;; (package! treemacs-magit)
+
+(package! expreg)

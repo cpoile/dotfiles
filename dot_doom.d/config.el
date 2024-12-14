@@ -227,10 +227,11 @@
 ;; Odin setup
 ;;
 
-(load! "odin-mode.el")
+(load! "odin-mode.el")  ;; for reference
+(load! "odin-ts-mode.el")
 ;;(package-vc-install "https://git.sr.ht/~mgmarlow/odin-mode")
-(use-package odin-mode
-  :bind (:map odin-mode-map
+(use-package odin-ts-mode
+  :bind (:map odin-ts-mode-map
       ;;("C-c C-r" . 'odin-run-project)
       ;;("C-c C-c" . 'odin-build-project)
       ;;("C-c C-r" . 'cp/compile)
@@ -240,25 +241,35 @@
 
 (with-eval-after-load 'lsp-mode
   (add-to-list 'lsp-language-id-configuration
-               '(odin-mode . "odin"))
+               '(odin-ts-mode . "odin"))
   (let ((ols-exec (if (string-equal system-type "darwin") "~/bin/ols" "~/git/ols/ols.exe")))
     (lsp-register-client
      (make-lsp-client :new-connection (lsp-stdio-connection ols-exec)
-                      :major-modes '(odin-mode)
+                      :major-modes '(odin-ts-mode)
                       :server-id 'ols
                       :multi-root t)))) ;; This is just so lsp-mode sends the "workspaceFolders" param to the server.
-(add-hook 'odin-mode-hook #'lsp)
-;;(remove-hook 'odin-mode-hook #'lsp)
+(add-hook 'odin-ts-mode-hook #'lsp)
+;;(remove-hook 'odin-ts-mode-hook #'lsp)
 (after! compile
-  (add-to-list 'compilation-error-regexp-alist-alist '(odin "\\[\\([A-Za-z_]+\\.odin\\):\\([0-9]+\\):" 1 2 3))
-  (add-to-list 'compilation-error-regexp-alist 'odin))
+  (add-to-list 'compilation-error-regexp-alist '("^\\(.*?\\)(\\([0-9]+\\):\\([0-9]+\\).*" 1 2 3))
+
+  ;; looks like these two did nothing?
+  ;(add-to-list 'compilation-error-regexp-alist-alist '(odin "\\[\\([A-Za-z_]+\\.odin\\):\\([0-9]+\\):" 1 2 3))
+  ;(add-to-list 'compilation-error-regexp-alist 'odin)
+  )
 
 ;; Remove annoying lsp crap:
 ;(setq lsp-ui-sideline-show-diagnostics t)
 ;(setq lsp-diagnostics-provider :auto)
 
 
-(add-hook 'odin-mode-hook (lambda ()
+;; treat _ as part of the word
+;; (defvar my-odin-mode-syntax-table
+;;   (let ((table (copy-syntax-table (odin-ts-mode--syntax-table))))
+;;     (modify-syntax-entry ?_ "w" table)
+;;     table))
+
+(add-hook 'odin-ts-mode-hook (lambda ()
                             (setq comment-start "//"
                                   comment-end   "")
                             ;; (setq indent-tabs-mode nil)
@@ -271,17 +282,32 @@
                              flycheck-check-syntax-automatically '(mode-enabled save)
                              block-comment-start "//"
                              block-comment-end ""
-                             )))
+                             )
+                            (modify-syntax-entry ?_ "w" odin-ts-mode--syntax-table)
+                            ))
 
-;(remove-hook 'odin-mode-hook (car odin-mode-hook))
+;(remove-hook 'odin-ts-mode-hook (car odin-ts-mode-hook))
 
 
 ;; Should be in an after! macro, but we're definitely loading it above, so:
+;; TODO: move over to using ts queries like in c-ts-mode below
+(defconst odin-identifier-rx "[[:word:][:multibyte:]_]+")
+(defun odin-directives-rx (directives)
+  (odin-wrap-directive-rx (regexp-opt directives t)))
+(defconst odin-proc-directives
+  '("#force_inline"
+    "#force_no_inline"
+    "#type")
+  "Directives that can appear before a proc declaration")
+(defun odin-wrap-directive-rx (s)
+  (concat "\\_<" s "\\>"))
+(defconst odin-proc-or-struct-rx (concat "\\(\\_<" odin-identifier-rx "\\_>\\)\\s *::\\s *\\(" (odin-directives-rx odin-proc-directives) "\\)?\\s *\\(\\_<proc\\_>\\|\\_<struct\\_>\\)"))
+
 (defun odin-previous-defun-or-struct ()
   "Go to previous proc."
   (interactive)
   (beginning-of-line)
-  (re-search-backward odin-proc-or-struct-rx)
+  (re-search-backward odin-proc-or-struct-rx nil t)
   (beginning-of-line))
 
 
@@ -292,11 +318,10 @@
   (re-search-forward odin-proc-or-struct-rx nil t)
   (beginning-of-line))
 
-(map! :map odin-mode-map
+(map! :map odin-ts-mode-map
       "C-M-e" #'odin-next-defun-or-struct
       "C-M-a" #'odin-previous-defun-or-struct
       "C-M-l" #'lsp-format-buffer)
-
 
 ;;
 ;; Programming remapping
@@ -304,11 +329,39 @@
 
 ;; remove c-i = tab
 (define-key input-decode-map [?\C-i] [C-i])
+(define-key input-decode-map [?\C-\S-i] [C-S-i])
 ;; replace with expand region
-(global-set-key (kbd "<C-i>") 'er/expand-region)
+(global-set-key (kbd "<C-i>") 'expreg-expand)
+(global-set-key (kbd "<C-S-i>") 'expreg-contract)
 
 (map! :map global-map
       "C-x f" #'+workspace/switch-to)
+
+;;
+;; Bookmarking with C-S-1..9  and jumping with C-1..0
+;;
+(defun cp/bmk-set-mark (num)
+  "Set mark num"
+  (interactive)
+  (bookmark-set num))
+(defun cp/bmk-jump-mark (num)
+  "Jump to mark num"
+  (interactive)
+  (bookmark-jump num))
+
+(global-set-key (kbd "C-!") (lambda () (interactive)(cp/bmk-set-mark "1")))
+(global-unset-key (kbd "C-1"))
+(global-set-key (kbd "C-1") (lambda () (interactive)(cp/bmk-jump-mark "1")))
+(global-unset-key (kbd "C-@"))
+(global-set-key (kbd "C-@") (lambda () (interactive)(cp/bmk-set-mark "2")))
+(global-unset-key (kbd "C-2"))
+(global-set-key (kbd "C-2") (lambda () (interactive)(cp/bmk-jump-mark "2")))
+(global-set-key (kbd "C-#") (lambda () (interactive)(cp/bmk-set-mark "3")))
+(global-unset-key (kbd "C-3"))
+(global-set-key (kbd "C-3") (lambda () (interactive)(cp/bmk-jump-mark "3")))
+(global-set-key (kbd "C-$") (lambda () (interactive)(cp/bmk-set-mark "4")))
+(global-unset-key (kbd "C-4"))
+(global-set-key (kbd "C-4") (lambda () (interactive)(cp/bmk-jump-mark "4")))
 
 ;;
 ;; Perspective -- put most recently used persp on top -- doesn't work, abandoned.
@@ -732,7 +785,7 @@
   "Call dabbrev-expand if point is within a word,
     otherwise call normal tab command."
   (interactive)
-  (if (looking-back "\\w" (1- (point)))
+  (if (looking-back "[[:word:]_\\.]" (1- (point)))
       ;;(dabbrev-expand nil)
       (+company/complete)
     (indent-for-tab-command)))
@@ -1161,8 +1214,16 @@ going through children."
 
 
 (after! treemacs
-
-    (map! :map global-map "s-1" #'treemacs))
+  (map! :map global-map "s-1" #'treemacs)
+  (treemacs-create-theme "simple"
+    :config
+    (progn
+      (treemacs-create-icon :icon "- " :extensions (root-open) :fallback 'same-as-icon)
+      (treemacs-create-icon :icon "+ " :extensions (root-closed) :fallback 'same-as-icon)
+      (treemacs-create-icon :icon "- " :extensions (dir-open) :fallback 'same-as-icon)
+      (treemacs-create-icon :icon "+ " :extensions (dir-closed) :fallback 'same-as-icon)
+      (treemacs-create-icon :icon "  " :extensions (fallback) :fallback 'same-as-icon)))
+  (treemacs-load-theme "simple"))
 
 (use-package treemacs
   :ensure t
@@ -1315,7 +1376,8 @@ going through children."
          ("C-c C-SPC" . mc/edit-lines)
          ("M-j" . mc-mark-next-like-this-symbol-then-cycle-forward)
          ("M-J" .  mc-unmark-current)
-         ("M-C-S-j" . mc-skip-to-next-like-this-then-cycle-forward)))
+         ("M-C-S-j" . mc-skip-to-next-like-this-then-cycle-forward)
+         ("C-S-<mouse-1>" . mc/add-cursor-on-click)))
 
 ;; Now C-x SPC will be rectangle mark mode
 (after! back-button
@@ -1361,28 +1423,6 @@ going through children."
 ;;(setq dumb-jump-force-searcher nil)
 
 ;;
-;; XRef jumps should recenter nearer to the top of the window so we can see more of the function
-;;
-;; only for new buffers:
-;; (defun cp/xref-recenter-in-new-buffer (func &rest args)
-;;   (let ((original-buf (current-buffer)))
-;;     (apply func args)
-;;     (unless (eq (current-buffer) original-buf)
-;;       (recenter-top-bottom 20))))
-
-;; all buffers:
-(defun cp/jump-recenter (func &rest args)
-  (interactive)
-  (let ((cur (line-number-at-pos)))
-    (if (not (= cur (progn
-                      (apply func args)
-                      (line-number-at-pos))))
-        (recenter-top-bottom 24))))
-
-(advice-add 'cp/go-to-def-or-ref :around 'cp/jump-recenter)
-
-
-;;
 ;; NOTE: this is so that if we goto next-error and the resulting error is displayed in our current window,
 ;;       but the other window already had that file open, move the buffer the other window.
 ;;       This is kind of hacky. It would probably be better to change the compilation-goto-locus itself.
@@ -1395,7 +1435,7 @@ going through children."
           (not (string-match "^[ *]" (buffer-name (window-buffer win))))))
    (window-list nil 'f)))
 
-(defun cp/next-error (func &rest args)
+(defun cp/move-to-already-opened (&optional arg &rest args)
   (interactive)
     ;; for debugging:
     ;; (message (format "after! other buf: %s  cur buf: %s  window-list: %s"
@@ -1406,10 +1446,37 @@ going through children."
                  (buffer-file-name (current-buffer)))
         (cp/move-buffer-to-other-window)))
 
-(advice-add 'compilation-goto-locus :after #'cp/next-error)
+(advice-add 'compilation-goto-locus :after #'cp/move-to-already-opened)
 
 ;;
-;;(advice-remove 'next-error #'cp/next-error)
+;;(advice-remove 'compilation-goto-locus #'cp/next-error)
+;;
+
+;;
+;; XRef jumps should recenter nearer to the top of the window so we can see more of the function
+;;
+;; only for new buffers:
+;; (defun cp/xref-recenter-in-new-buffer (func &rest args)
+;;   (let ((original-buf (current-buffer)))
+;;     (apply func args)
+;;     (unless (eq (current-buffer) original-buf)
+;;       (recenter-top-bottom 20))))
+
+;; all buffers:
+(defun cp/jump-recenter (func &optional &rest args)
+  ;; TODO: only recenter if we moved far away?
+  (interactive)
+  (let ((cur (line-number-at-pos)))
+    (if (not (= cur (progn
+                      (apply func args)
+                      (line-number-at-pos))))
+        (recenter-top-bottom 24))))
+
+(advice-add 'cp/go-to-def-or-ref :around 'cp/jump-recenter)
+(advice-add 'cp/go-to-def-or-ref :after 'cp/move-to-already-opened)
+
+;; (advice-remove 'cp/go-to-def-or-ref 'cp/jump-recenter)
+
 ;;
 ;; Do the same for consult-imenu
 ;;
@@ -1460,25 +1527,26 @@ going through children."
 ;;
 ;; To make TODO: highlight the whole line:
 ;;
-;; (after! hl-todo
-;;   (defun hl-todo--setup-regexp ()
-;;     "Setup keyword regular expression.
-;;      See the function `hl-todo--regexp'."
-;;     (when-let ((bomb (assoc "???" hl-todo-keyword-faces)))
-;;       ;; If the user customized this variable before we started to
-;;       ;; treat the strings as regexps, then the string "???" might
-;;       ;; still be present.  We have to remove it because it results
-;;       ;; in the regexp search taking forever.
-;;       (setq hl-todo-keyword-faces (delete bomb hl-todo-keyword-faces)))
-;;     (setq hl-todo--regexp
-;;           (concat "\\(\\<"
-;;                   "\\(" (mapconcat #'car hl-todo-keyword-faces "\\|") "\\)"
-;;                   "\\>"
-;;                   "[^\"\n]*\\)")))
-;;   (setq hl-todo--keywords
-;;         `((,(lambda (bound) (hl-todo--search nil bound))
-;;      (1 (hl-todo--get-face) prepend t)))))
+(after! hl-todo
+  (defun hl-todo--setup-regexp ()
+    "Setup keyword regular expression.
+     See the function `hl-todo--regexp'."
+    (when-let ((bomb (assoc "???" hl-todo-keyword-faces)))
+      ;; If the user customized this variable before we started to
+      ;; treat the strings as regexps, then the string "???" might
+      ;; still be present.  We have to remove it because it results
+      ;; in the regexp search taking forever.
+      (setq hl-todo-keyword-faces (delete bomb hl-todo-keyword-faces)))
+    (setq hl-todo--regexp
+          (concat "\\(\\<"
+                  "\\(" (mapconcat #'car hl-todo-keyword-faces "\\|") "\\)"
+                  "\\>"
+                  "[^\"\n]*\\)")))
+  (setq hl-todo--keywords
+        `((,(lambda (bound) (hl-todo--search nil bound))
+     (1 (hl-todo--get-face) prepend t)))))
 
+;; TODO: this is a test
 (after! hl-todo
   (defface my-TODO-face
     '((t :background "#52442E" :foreground "#D3C6AA" :inherit (hl-todo)))
@@ -1604,22 +1672,31 @@ Return an event vector."
 ;;         (rust "https://github.com/tree-sitter/tree-sitter-rust")
 ;;         (odin "https://github.com/ap29600/tree-sitter-odin")))
 
-;; to install for c and c++ only:
+;; to install for c and c++, go only:
 ;;
 ;; (setq treesit-language-source-alist
 ;;       '((c "https://github.com/tree-sitter/tree-sitter-c")
-;;         (cpp "https://github.com/tree-sitter/tree-sitter-cpp")))
+;;         (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+;;         (go "https://github.com/tree-sitter/tree-sitter-go")))
 ;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
 
 ;; to install for jai:
 ;;
 ;; (setq treesit-language-source-alist
-;;       '((jai "https://github.com/SogoCZE/tree-sitter-jai")))
+;;       '((jai "https://github.com/constantitus/tree-sitter-jai")))
+;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
+
+;; to install for Odin:
+;; (setq treesit-language-source-alist
+;;       '((odin "https://github.com/tree-sitter-grammars/tree-sitter-odin")))
 ;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
 
 (add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
 (add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
 (add-to-list 'major-mode-remap-alist '(c-or-c++-mode . c-or-c++-ts-mode))
+(add-to-list 'major-mode-remap-alist '(odin-mode . odin-ts-mode))
+(add-to-list 'major-mode-remap-alist '(go-mode . go-ts-mode))
+(add-to-list 'major-mode-remap-alist '(jai-mode . jai-ts-mode))
 
  ;; (major-mode-remap-alist
  ;;  '((elixir-mode . elixir-ts-mode)))
@@ -1642,6 +1719,11 @@ Return an event vector."
   (and (fboundp 'treesit-available-p)
        (treesit-available-p)
        (treesit-language-at (point))))
+
+
+(add-load-path! "~/git/combobulate")
+(require 'combobulate)
+
 
 ; to set up emacs with treesitter:
 ;   https://github.com/d12frosted/homebrew-emacs-plus
@@ -1784,19 +1866,23 @@ Return an event vector."
     (if (string-match reg bufC)
         (kill-buffer ediff-buffer-C))))
 
-(add-hook 'ediff-quit-hook 'cp/kill-ediff-buffers)
+;; adding the hook after init, so that it's last. See at the end of this file.
 
 (global-set-key (kbd "C-c C-d") 'cp/ediff-region-with-clipboard)
 
 ;(remove-hook 'ediff-quit-hook (car ediff-quit-hook))
+;(remove-hook 'ediff-quit-hook 'cp/kill-ediff-buffers)
 
 (after! dired
   (add-hook 'dired-mode-hook (lambda () (dired-omit-mode -1))))
 
+
+(global-hl-line-mode)
+
 ;;
 ;; RUN AFTER EVERYTHING (e.g., customize theme, orgmode, settings that get overwritten)
 ;;
-(add-hook 'after-init-hook
+(add-hook 'emacs-startup-hook
           (lambda ()
             (progn
               ;;(set-face-attribute 'font-lock-comment-face nil :foreground "#586D36")
@@ -1809,15 +1895,18 @@ Return an event vector."
                                         ;(set-face-attribute 'lazy-highlight nil :background "#92a375" :foreground "#F7ECD2")
               (set-face-attribute 'lazy-highlight nil :background "#76875a" :foreground "#F7ECD2")
 
-              (set-face-attribute 'font-lock-preprocessor-face nil :foreground "#7FBCB4") ;; was red: #E67C7F
+              (set-face-attribute 'font-lock-preprocessor-face nil :foreground "#A9C181" :weight 'bold) ;; was red: #E67C7F, then blue: #7FBCB4
               (set-face-attribute 'font-lock-keyword-face nil :foreground "#A9C181") ;; was: ...forget green I think, then B5C49E
               (set-face-attribute 'font-lock-type-face nil :foreground "#7FBCB4") ;; was: #DDBD7F A7C080
               (set-face-attribute 'font-lock-function-name-face nil :foreground "#EDC77A") ;; was: #E7DCC4 EDC77A
+              (set-face-attribute 'font-lock-function-call-face nil :foreground "#C4CD9F") ;; was: #E7DCC4 EDC77A #f1d396 #CACFA5
               (set-face-attribute 'font-lock-variable-name-face nil :foreground "#D3C6AA") ;; was: #efcadb D3C6AA
               (set-face-attribute 'font-lock-operator-face nil :foreground "#E69875")
+
               (set-face-attribute 'window-divider nil :foreground "gray30")
               (set-face-attribute 'next-error-message nil :background "#3E482D" :foreground "#D3C6AA")
-              (set-face-attribute 'default nil :foreground "#E7DCC4") ;; was: #efcadb D3C6AA e2d5b8
+              (set-face-attribute 'default nil :foreground "#D3C6AA") ;; was: #efcadb D3C6AA e2d5b8 E7DCC4
+              (set-face-attribute 'hl-line nil :background "#20282D") ;; was: #1E262B
               (set-face-attribute 'scroll-bar nil :foreground "#6E7B85" :background "#242D34")  ;; doesn't work in windows
               (set-face-attribute 'show-paren-match nil :background nil)
               (after! diff-mode
@@ -1833,6 +1922,8 @@ Return an event vector."
               (add-to-list 'display-buffer-alist
                            (cons "\\*Async Shell Command\\*.*" (cons #'display-buffer-no-window nil)))
               (set-face-attribute 'org-block nil :background "#2A3339")
+              (add-hook 'ediff-quit-hook 'cp/kill-ediff-buffers)
+              ;;(remove-hook 'ediff-quit-hook 'cp/kill-ediff-buffers)
               (message "finished after init-setup")
               )
             ))
