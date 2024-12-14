@@ -1721,7 +1721,7 @@ Return an event vector."
        (treesit-language-at (point))))
 
 
-(add-load-path! "~/git/combobulate")
+(add-load-path! "~/.doom.d/combobulate/")
 (require 'combobulate)
 
 
