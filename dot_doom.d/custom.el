@@ -3,14 +3,26 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- )
+ '(ediff-current-diff-A ((t nil)))
+ '(ediff-current-diff-B ((t (:inherit ediff-current-diff-A :background "#304946" :foreground ""))))
+ '(ediff-even-diff-B ((t (:inherit ediff-even-diff-A :background "#2e4542"))))
+ '(ediff-fine-diff-A ((t (:extend t :background "#304946" :weight bold)))))
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(safe-local-variable-values
-   '((custom-run-test-cmd . "c:/Users/Chris/git/jai/scratch/build/scratch.exe test")
+   '((defualt-compile-cmd .
+      "jai c:/Users/Chris/git/jai/handmade_jai/build_handmade.jai")
+     (compile-all-cmd . "c:/Users/Chris/git/jai/handmade_jai/make.bat")
+     (file-to-compile-cmd
+      ("win32_handmade.jai" compile
+       "jai c:/Users/Chris/git/jai/handmade_jai/build_win32_handmade.jai"))
+     (custom-compile-cmd .
+      "jai c:/Users/Chris/git/jai/handmade_jai/build_handmade.jai")
+     (custom-run-test-cmd .
+      "c:/Users/Chris/git/jai/scratch/build/scratch.exe test")
      (custom-run-all-cmd . "c:/Users/Chris/git/jai/scratch/build/scratch.exe")
      (custom-compile-cmd . "c:/Users/Chris/git/jai/scratch/make.bat")
      (custom-run-test-cmd .

@@ -43,6 +43,8 @@
 
 (setq line-spacing 0)
 (setq isearch-lazy-count t)
+(after! ligature
+  (global-ligature-mode 0))
 
 ;;
 ;; If you or (Emacs can't find your font, use 'M-x describe-font' to look them
@@ -190,15 +192,20 @@
 ;; Jai setup
 ;;
 
-(load! "jai-mode.el")
+;;(load! "jai-mode.el")
+(load! "jai-ts-mode.el")
 ;; using prog-mode-map for all keybindings
-(use-package jai-mode)
+(use-package jai-ts-mode)
+
+(defconst jai-identifier-rx "[[:word:][:multibyte:]_]+")
+(defconst jai--defun-rx "\(.*\).*\{")  ;; original
+(defconst jai-proc-rx (concat "\\(\\_<" jai-identifier-rx "\\_>\\)\\s *::\\s *\\(?:inline\\)?\\(?:struct\\)?\\s *[({]"))
 
 (defun jai-previous-defun ()
   "Go to previous proc."
   (interactive)
   (beginning-of-line)
-  (re-search-backward jai-proc-rx)
+  (re-search-backward jai-proc-rx nil t)
   (beginning-of-line))
 
 (defun jai-next-defun ()
@@ -208,10 +215,12 @@
   (re-search-forward jai-proc-rx nil t)
   (beginning-of-line))
 
-(map! :map jai-mode-map
+(map! :map jai-ts-mode-map
       "C-M-e" #'jai-next-defun
-      "C-M-a" #'jai-previous-defun)
+      "C-M-a" #'jai-previous-defun
+      "C-M-l" #'align-regexp)
 
+;; don't add this to jai-ts-mode-hook -- it's already in the mode
 (add-hook 'jai-mode-hook (lambda ()
                            (setq-local indent-tabs-mode nil
                                        tab-width 4
@@ -347,6 +356,7 @@
 (defun cp/bmk-jump-mark (num)
   "Jump to mark num"
   (interactive)
+  (push-mark)
   (bookmark-jump num))
 
 (global-set-key (kbd "C-!") (lambda () (interactive)(cp/bmk-set-mark "1")))
@@ -362,6 +372,24 @@
 (global-set-key (kbd "C-$") (lambda () (interactive)(cp/bmk-set-mark "4")))
 (global-unset-key (kbd "C-4"))
 (global-set-key (kbd "C-4") (lambda () (interactive)(cp/bmk-jump-mark "4")))
+(global-set-key (kbd "C-%") (lambda () (interactive)(cp/bmk-set-mark "5")))
+(global-unset-key (kbd "C-5"))
+(global-set-key (kbd "C-5") (lambda () (interactive)(cp/bmk-jump-mark "5")))
+(global-set-key (kbd "C-^") (lambda () (interactive)(cp/bmk-set-mark "6")))
+(global-unset-key (kbd "C-6"))
+(global-set-key (kbd "C-6") (lambda () (interactive)(cp/bmk-jump-mark "6")))
+(global-set-key (kbd "C-&") (lambda () (interactive)(cp/bmk-set-mark "7")))
+(global-unset-key (kbd "C-7"))
+(global-set-key (kbd "C-7") (lambda () (interactive)(cp/bmk-jump-mark "7")))
+(global-set-key (kbd "C-*") (lambda () (interactive)(cp/bmk-set-mark "8")))
+(global-unset-key (kbd "C-8"))
+(global-set-key (kbd "C-8") (lambda () (interactive)(cp/bmk-jump-mark "8")))
+(global-set-key (kbd "C-(") (lambda () (interactive)(cp/bmk-set-mark "9")))
+(global-unset-key (kbd "C-9"))
+(global-set-key (kbd "C-9") (lambda () (interactive)(cp/bmk-jump-mark "9")))
+(global-set-key (kbd "C-)") (lambda () (interactive)(cp/bmk-set-mark "0")))
+(global-unset-key (kbd "C-0"))
+(global-set-key (kbd "C-0") (lambda () (interactive)(cp/bmk-jump-mark "0")))
 
 ;;
 ;; Perspective -- put most recently used persp on top -- doesn't work, abandoned.
@@ -724,21 +752,84 @@
       (shell-command "remedybg.exe bring-debugger-to-foreground")
       (setq-local compile-command prev-cmd))))
 
+(defun remedy-add-breakpoint ()
+  (interactive)
+  (let* ((name (buffer-file-name))
+         (linenum (line-number-at-pos))
+         (command (format "remedybg.exe add-breakpoint-at-file %s %d &" name linenum))
+         (prev-cmd compile-command))
+    (progn
+      (shell-command command)
+      (setq-local compile-command prev-cmd))))
+
+(defun remedy-remove-all-breakpoints ()
+  (interactive)
+  (let* ((name (buffer-file-name))
+         (linenum (line-number-at-pos))
+         (command (format "remedybg.exe remove-all-breakpoints &" name linenum))
+         (prev-cmd compile-command))
+    (progn
+      (shell-command command)
+      (setq-local compile-command prev-cmd))))
+
+
+;;
+;; .dir-locals.el helpers  (from https://emacs.stackexchange.com/questions/13080/reloading-directory-local-variables)
+
+(defun cp/reload-dir-locals-for-current-buffer ()
+  "reload dir locals for the current buffer"
+  (interactive)
+  (let ((enable-local-variables :all))
+    (hack-dir-local-variables-non-file-buffer)))
+
+(defun cp/reload-dir-locals-for-all-buffer-in-this-directory ()
+  "For every buffer with the same `default-directory` as the
+current buffer's, reload dir-locals."
+  (interactive)
+  (let ((dir default-directory))
+    (dolist (buffer (buffer-list))
+      (with-current-buffer buffer
+        (when (equal default-directory dir)
+          (cp/reload-dir-locals-for-current-buffer))))))
+
+(add-hook 'emacs-lisp-mode-hook
+          (defun enable-autoreload-for-dir-locals ()
+            (when (and (buffer-file-name)
+                       (equal dir-locals-file
+                              (file-name-nondirectory (buffer-file-name))))
+              (add-hook 'after-save-hook
+                        'cp/reload-dir-locals-for-all-buffer-in-this-directory
+                        nil t))))
+
 ;; add to your project's .dir-locals.el, eg.
-;; ((jai-mode . ((custom-compile-cmd . "c:/Users/Chris/git/jai/writing-an-interpreter/make.bat")
-;;               (custom-run-all-cmd . "c:/Users/Chris/git/jai/writing-an-interpreter/build/main.exe")
-;;               (custom-run-test-cmd . "c:/Users/Chris/git/jai/writing-an-interpreter/build/main.exe test"))))
+;; ((jai-ts-mode . ((custom-compile-cmd . "jai c:/Users/Chris/git/jai/handmade_jai/build_handmade.jai")
+                 ;; (custom-run-all-cmd . "c:/Users/Chris/git/jai/handmade_jai/build/handmade.exe")
+                 ;; (custom-run-test-cmd . "c:/Users/Chris/git/jai/handmade_jai/build/handmade.exe test")
+                 ;; (file-to-compile-cmd . (("win32_handmade.jai" . (compile "jai c:/Users/Chris/git/jai/handmade_jai/build_win32_handmade.jai")))))))
 
 (defun cp/compile ()
   (interactive)
-  (if (boundp 'custom-compile-cmd)
-      (compile custom-compile-cmd)
-    (call-interactively 'compile)))
+  (let* ((file-name (file-name-nondirectory (buffer-file-name)))
+         (file-to-cmd-alist (if (boundp 'file-to-compile-cmd)
+                                file-to-compile-cmd
+                              nil))
+         (default-cmd (if (boundp 'custom-compile-cmd)
+                          '(compile custom-compile-cmd)
+                        '(call-interactively 'compile)))
+         (cmd (or (cdr (assoc file-name file-to-cmd-alist))
+                         default-cmd)))
+    (eval cmd)))
 
 (defun cp/run-all ()
   (interactive)
   (if (boundp 'custom-run-all-cmd)
       (compile custom-run-all-cmd)
+    (call-interactively 'compile)))
+
+(defun cp/compile-all ()
+  (interactive)
+  (if (boundp 'compile-all-cmd)
+      (compile compile-all-cmd)
     (call-interactively 'compile)))
 
 ;; (defun cp/run-tests ()
@@ -793,28 +884,24 @@
 ;; tab was indent-for-tab-command
 ;;(global-set-key (kbd "TAB") 'cp/tab-dwim)
 
-(map! :map prog-mode-map
-      "C-c C-c"    #'compile
-      "C-c C-r"    #'cp/compile
-      "C-c r a"    #'cp/run-all
-      "C-c r t"    #'cp/run-tests
-      "C-c r r"    #'remedy-run
-      "C-c r c"    #'remedy-run-to-cursor
-      ;;"C-c r c"    #'raddbg-run-to-cursor
-      "C-c r o"    #'remedy-open-to-cursor
-      "C-q"        #'lsp-ui-doc-show
-      "M-s"        #'+default/search-project
-      "M-_"        #'+fold/close-all
-      "M-+"        #'+fold/open-all
-      "M--"        #'+fold/close
-      "M-="        #'+fold/open
-      "M-m"        #'cp/matching-brace
-      "M-."        #'cp/go-to-def-or-ref
-      "M-<return>" #'+default/newline-above
-      "<tab>"      #'cp/tab-dwim
-      "M-i"        #'consult-imenu
-      )
-
+;;
+;; Format enclosing region
+;;
+(defun cp/align-brace-content ()
+  "Execute OPERATION on the content between braces, excluding brace lines."
+  (interactive)
+  (save-excursion
+    (cp/matching-brace)
+    (forward-line 1)
+    (let ((begin (point)))
+      (cp/matching-brace)
+      (cp/matching-brace)
+      (beginning-of-line)
+      (set-mark (point))
+      (goto-char begin)
+      (align-regexp (region-beginning)
+                    (region-end)
+                    (concat "\\(\\s-*\\)" (read-string "Align regexp: " ":" nil ":"))))))
 
 (defun cp/remove-hat-M ()
   (interactive)
@@ -1248,6 +1335,15 @@ going through children."
 ;;
 ;; Keybindings
 ;;
+
+;; move windows using S-up, S-down, S-left, S-right
+(after! windmove
+  (windmove-default-keybindings))
+(map! "C-c <right>" #'windmove-swap-states-right)
+(map! "C-c <left>" #'windmove-swap-states-left)
+(map! "C-c <up>" #'windmove-swap-states-up)
+(map! "C-c <down>" #'windmove-swap-states-down)
+
 (map! :map text-mode-map "C-M-p" #'cp/backward-paragraph)
 (map! :map text-mode-map "M-p" #'cp/backward-paragraph)
 
@@ -1282,8 +1378,6 @@ going through children."
 
 (map! "C-x C-o" #'cp/copy-buffer-to-other-window)
 (map! "C-x O" #'cp/move-buffer-to-other-window)
-(map! "C-c <right>" #'windmove-swap-states-right)
-(map! "C-c <left>" #'windmove-swap-states-left)
 
 ;; TODO: convert the following to map! macros?
 ;;
@@ -1435,21 +1529,76 @@ going through children."
           (not (string-match "^[ *]" (buffer-name (window-buffer win))))))
    (window-list nil 'f)))
 
-(defun cp/move-to-already-opened (&optional arg &rest args)
+(defun cp/move-to-already-opened (func &rest args)
   (interactive)
+  "If we searched and found a ref in the file that is already opened, move it to that window.
+Unless we started with the file opened in both windows, then move
+other window to new position and move current window to original
+position. -- why? -- only for xref, not for next-error... we want
+next-error to be in current window, right?
+ TODO: use excursion,or transient?"
     ;; for debugging:
     ;; (message (format "after! other buf: %s  cur buf: %s  window-list: %s"
     ;;                  (buffer-file-name (window-buffer (get-next-non-temp-buffer-window)))
     ;;                  (buffer-file-name (current-buffer))
     ;;                  (window-list nil 'f)))
-    (if (string= (buffer-file-name (window-buffer (get-next-non-temp-buffer-window)))
-                 (buffer-file-name (current-buffer)))
-        (cp/move-buffer-to-other-window)))
+  (let* ((orig-cur-buffer-name (buffer-file-name (current-buffer)))
+         (the-other-window (get-next-non-temp-buffer-window))
+         (the-other-buffer (if the-other-window
+                               (window-buffer (get-next-non-temp-buffer-window))
+                             nil))
+         (other-buffer-name (if the-other-window
+                                (buffer-file-name the-other-buffer)
+                              nil))
+         (started-same (string= orig-cur-buffer-name other-buffer-name))
+         (orig-point (point)))
+    (apply func args)
+    (let ((ended-same (string= (buffer-file-name (current-buffer))
+                               other-buffer-name)))
+      (if (and started-same ended-same)
+          (let ((new-point (point)))
+            (goto-char orig-point)
+            (select-window the-other-window)
+            (goto-char new-point))
+            ;; (save-selected-window
+            ;;   (select-window the-other-window)
+            ;;   (goto-line line-num))
+            ;; (goto-char orig-point))
+        (if ended-same (cp/move-buffer-to-other-window))))))
 
-(advice-add 'compilation-goto-locus :after #'cp/move-to-already-opened)
+(defun cp/move-to-already-opened-for-next-error (func &rest args)
+  (interactive)
+  "If we searched and found a ref in the file that is already opened, move it to that window.
+Unless we started with the file opened in both windows, then move
+the current window only. TODO: use excursion,or transient?"
+  (let* ((orig-cur-buffer-name (buffer-file-name (current-buffer)))
+         (the-other-window (get-next-non-temp-buffer-window))
+         (the-other-buffer (if the-other-window
+                               (window-buffer (get-next-non-temp-buffer-window))
+                             nil))
+         (other-buffer-name (if the-other-window
+                                (buffer-file-name the-other-buffer)
+                              nil))
+         (started-same (string= orig-cur-buffer-name other-buffer-name))
+         (orig-point (point)))
+    (apply func args)
+    (let ((ended-same (string= (buffer-file-name (current-buffer))
+                               other-buffer-name)))
+      (if (not (and started-same ended-same))
+          (if ended-same (cp/move-buffer-to-other-window))))))
 
+(defun cp/next-error ()
+  "for some reaton, when we adive-add'ed compilation-goto-locus with :around cp/move-to-already-opened,
+the current-buffer was nil. So use this wrapper.  This is bound to M-g M-n."
+  (interactive)
+  (cp/move-to-already-opened-for-next-error #'next-error))
+
+
+;; Don't need it anymore, after cp/next-errror:
+;;(advice-add 'compilation-goto-locus :around #'cp/move-to-already-opened)
 ;;
-;;(advice-remove 'compilation-goto-locus #'cp/next-error)
+;; clean up during debugging:
+;;(advice-remove 'compilation-goto-locus #'cp/move-to-already-opened)
 ;;
 
 ;;
@@ -1472,15 +1621,47 @@ going through children."
                       (line-number-at-pos))))
         (recenter-top-bottom 24))))
 
+;; turn off if it causes you to jump when you're looking at the destination
 (advice-add 'cp/go-to-def-or-ref :around 'cp/jump-recenter)
-(advice-add 'cp/go-to-def-or-ref :after 'cp/move-to-already-opened)
+(advice-add 'cp/go-to-def-or-ref :around 'cp/move-to-already-opened)
+(advice-add 'better-jumper-jump-backward :around 'cp/jump-recenter)
 
-;; (advice-remove 'cp/go-to-def-or-ref 'cp/jump-recenter)
+;;(advice-remove 'cp/go-to-def-or-ref 'cp/move-to-already-opened)
+;;(advice-remove 'cp/go-to-def-or-ref 'cp/jump-recenter)
 
 ;;
 ;; Do the same for consult-imenu
 ;;
 (advice-add 'consult-imenu :around 'cp/jump-recenter)
+
+
+(map! :map prog-mode-map
+      "C-c C-c"    #'compile
+      "C-c C-r"    #'cp/compile
+      ;;"C-c r a"    #'cp/run-all
+      "C-c r a"    #'cp/compile-all
+      "C-c r t"    #'cp/run-tests
+      "C-c r r"    #'remedy-run
+      "C-c r c"    #'remedy-run-to-cursor
+      ;;"C-c r c"    #'raddbg-run-to-cursor
+      "C-c r o"    #'remedy-open-to-cursor
+      "C-c r b"    #'remedy-add-breakpoint
+      "C-c r B"    #'remedy-remove-all-breakpoints
+      "C-q"        #'lsp-ui-doc-show
+      "M-s"        #'+default/search-project
+      "M-_"        #'+fold/close-all
+      "M-+"        #'+fold/open-all
+      "M--"        #'+fold/close
+      "M-="        #'+fold/open
+      "M-m"        #'cp/matching-brace
+      "M-."        #'cp/go-to-def-or-ref
+      "M-<return>" #'+default/newline-above
+      "<tab>"      #'cp/tab-dwim
+      "M-i"        #'consult-imenu
+      "C-M-S-L"    #'cp/align-brace-content
+      "M-g M-n"    #'cp/next-error
+      )
+
 
 ;;
 ;; Show which-function-mode in the modeline
@@ -1492,11 +1673,6 @@ going through children."
 ;;             ;; We remove Which Function Mode from the mode line, because it's mostly
 ;;             ;; invisible here anyway.
 ;;             (assq-delete-all 'which-func-mode mode-line-misc-info))
-
-;;
-;; Show previews when searching (not currently working)
-;; look at https://github.com/minad/consult#live-previews
-; (consult-customize :preview-key 'any)   ;; doesn't do anything
 
 ;;
 ;; Org-novelist
@@ -1696,7 +1872,7 @@ Return an event vector."
 (add-to-list 'major-mode-remap-alist '(c-or-c++-mode . c-or-c++-ts-mode))
 (add-to-list 'major-mode-remap-alist '(odin-mode . odin-ts-mode))
 (add-to-list 'major-mode-remap-alist '(go-mode . go-ts-mode))
-(add-to-list 'major-mode-remap-alist '(jai-mode . jai-ts-mode))
+(add-to-list 'major-mode-remap-alist '(jai-mode . jai-ts-mode))  ;; jai-ts-mode does this already?
 
  ;; (major-mode-remap-alist
  ;;  '((elixir-mode . elixir-ts-mode)))
@@ -1877,7 +2053,7 @@ Return an event vector."
   (add-hook 'dired-mode-hook (lambda () (dired-omit-mode -1))))
 
 
-(global-hl-line-mode)
+;;(global-hl-line-mode)
 
 ;;
 ;; RUN AFTER EVERYTHING (e.g., customize theme, orgmode, settings that get overwritten)
@@ -1902,6 +2078,7 @@ Return an event vector."
               (set-face-attribute 'font-lock-function-call-face nil :foreground "#C4CD9F") ;; was: #E7DCC4 EDC77A #f1d396 #CACFA5
               (set-face-attribute 'font-lock-variable-name-face nil :foreground "#D3C6AA") ;; was: #efcadb D3C6AA
               (set-face-attribute 'font-lock-operator-face nil :foreground "#E69875")
+              (set-face-attribute 'font-lock-number-face nil :foreground "#D699B6")
 
               (set-face-attribute 'window-divider nil :foreground "gray30")
               (set-face-attribute 'next-error-message nil :background "#3E482D" :foreground "#D3C6AA")
@@ -1910,11 +2087,16 @@ Return an event vector."
               (set-face-attribute 'scroll-bar nil :foreground "#6E7B85" :background "#242D34")  ;; doesn't work in windows
               (set-face-attribute 'show-paren-match nil :background nil)
               (after! diff-mode
-                (set-face-attribute 'diff-refine-removed nil :background "#E7DCC4" :foreground "#522e2f") ;;#643839 #724041
-                (set-face-attribute 'diff-refine-added nil :background "#E7DCC4" :foreground "#444e31")
-                ;;(set-face-attribute 'diff-refine-changed nil :background "#E7DCC4" :foreground "#304946")
+                (set-face-attribute 'diff-added nil :background "#3E482D" :foreground nil) ;;#643839 #724041
+                (set-face-attribute 'diff-refine-added nil :background "#E7DCC4" :foreground "#3E482D")
                 (set-face-attribute 'diff-removed nil :background "#311b1c" :foreground "#E7DCC4")
-                (set-face-attribute 'diff-added nil :background "#3E482D" :foreground "#E7DCC4")
+                ;(set-face-attribute 'diff-removed-higlight nil :background "#311b1c" :foreground "#E7DCC4")
+                (set-face-attribute 'diff-refine-removed nil :background "#E7DCC4" :foreground "#643839") ;;#643839 #724041
+                ;;(set-face-attribute 'diff-refine-changed nil :background "#E7DCC4" :foreground "#304946")
+                )
+              (after! magit
+                (set-face-attribute 'magit-diff-added-highlight nil :background "#304946" :foreground nil) ;;#643839 #724041
+                (set-face-attribute 'magit-diff-removed-highlight nil :background "#412E2E" :foreground nil) ;;#643839 #724041
                 )
               (after! markdown-mode
                 (set-face-attribute 'markdown-inline-code-face nil :background nil)
