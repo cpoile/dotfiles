@@ -435,8 +435,10 @@
 (after! magit
   (setq!
    magit-diff-refine-hunk 'all
-   git-commit-summary-max-length 68)
-   (setq magit-ediff-dwim-show-on-hunks t))
+   git-commit-summary-max-length 68
+   magit-ediff-dwim-show-on-hunks t
+   magit-diff-hide-trailing-cr-characters t
+   ))
 ;; (use-package magit-delta
 ;;   :hook (magit-mode . magit-delta-mode))
 
@@ -2083,7 +2085,8 @@ Return an event vector."
               (set-face-attribute 'window-divider nil :foreground "gray30")
               (set-face-attribute 'next-error-message nil :background "#3E482D" :foreground "#D3C6AA")
               (set-face-attribute 'default nil :foreground "#D3C6AA") ;; was: #efcadb D3C6AA e2d5b8 E7DCC4
-              (set-face-attribute 'hl-line nil :background "#20282D") ;; was: #1E262B
+              (after! hl-line
+                (set-face-attribute 'hl-line nil :background "#20282D")) ;; was: #1E262B
               (set-face-attribute 'scroll-bar nil :foreground "#6E7B85" :background "#242D34")  ;; doesn't work in windows
               (set-face-attribute 'show-paren-match nil :background nil)
               (after! diff-mode
@@ -2095,8 +2098,8 @@ Return an event vector."
                 ;;(set-face-attribute 'diff-refine-changed nil :background "#E7DCC4" :foreground "#304946")
                 )
               (after! magit
-                (set-face-attribute 'magit-diff-added-highlight nil :background "#304946" :foreground nil) ;;#643839 #724041
-                (set-face-attribute 'magit-diff-removed-highlight nil :background "#412E2E" :foreground nil) ;;#643839 #724041
+                (set-face-attribute 'magit-diff-added-highlight nil :background "#404830" :foreground nil :bold nil) ;;#643839 #724041 #304946
+                (set-face-attribute 'magit-diff-removed-highlight nil :background "#412E2E" :foreground nil :bold nil) ;;#643839 #724041
                 )
               (after! markdown-mode
                 (set-face-attribute 'markdown-inline-code-face nil :background nil)
