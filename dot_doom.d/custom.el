@@ -13,7 +13,9 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(safe-local-variable-values
-   '((defualt-compile-cmd .
+   '((default-compile-cmd .
+      "jai c:/Users/Chris/git/jai/handmade_jai/build_handmade.jai")
+     (defualt-compile-cmd .
       "jai c:/Users/Chris/git/jai/handmade_jai/build_handmade.jai")
      (compile-all-cmd . "c:/Users/Chris/git/jai/handmade_jai/make.bat")
      (file-to-compile-cmd

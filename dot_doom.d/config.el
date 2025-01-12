@@ -43,8 +43,6 @@
 
 (setq line-spacing 0)
 (setq isearch-lazy-count t)
-(after! ligature
-  (global-ligature-mode 0))
 
 ;;
 ;; If you or (Emacs can't find your font, use 'M-x describe-font' to look them
@@ -114,7 +112,7 @@
 (setq!
         mac-command-modifier 'meta
         mac-option-modifier  'super
-        scroll-margin        10
+        scroll-margin        30
         backup-by-copying t      ; don't clobber symlinks
         delete-old-versions t
         kept-new-versions 50
@@ -719,7 +717,7 @@
 
 (defun remedy-run ()
   (interactive)
-  (shell-command "remedybg.exe bring-debugger-to-foreground")
+  ;;(shell-command "remedybg.exe bring-debugger-to-foreground")
   (async-shell-command "remedybg.exe start-debugging")
   ;;(make-process "*remedy-out*" "*remedy-out*" "cmd.exe" "-c" "remedybg.exe start-debugging")
   )
@@ -815,8 +813,8 @@ current buffer's, reload dir-locals."
          (file-to-cmd-alist (if (boundp 'file-to-compile-cmd)
                                 file-to-compile-cmd
                               nil))
-         (default-cmd (if (boundp 'custom-compile-cmd)
-                          '(compile custom-compile-cmd)
+         (default-cmd (if (boundp 'default-compile-cmd)
+                          '(compile default-compile-cmd)
                         '(call-interactively 'compile)))
          (cmd (or (cdr (assoc file-name file-to-cmd-alist))
                          default-cmd)))
@@ -1559,21 +1557,24 @@ next-error to be in current window, right?
                                other-buffer-name)))
       (if (and started-same ended-same)
           (let ((new-point (point)))
-            (goto-char orig-point)
-            (select-window the-other-window)
-            (goto-char new-point))
-            ;; (save-selected-window
-            ;;   (select-window the-other-window)
-            ;;   (goto-line line-num))
-            ;; (goto-char orig-point))
+            ;; (goto-char orig-point)
+            ;; (select-window the-other-window)
+            ;; (goto-char new-point))
+            (save-selected-window
+              (select-window the-other-window)
+              (goto-line line-num))
+            (goto-char orig-point))
         (if ended-same (cp/move-buffer-to-other-window))))))
 
 (defun cp/move-to-already-opened-for-next-error (func &rest args)
-  (interactive)
+  (interactive "P")
   "If we searched and found a ref in the file that is already opened, move it to that window.
 Unless we started with the file opened in both windows, then move
-the current window only. TODO: use excursion,or transient?"
-  (let* ((orig-cur-buffer-name (buffer-file-name (current-buffer)))
+the current window only. TODO: use excursion,or transient?
+-- note: now always moving buffer. need to fix."
+  (let* ((orig-window (selected-window))
+         (orig-buffer (current-buffer))
+         (orig-cur-buffer-name (buffer-file-name (current-buffer)))
          (the-other-window (get-next-non-temp-buffer-window))
          (the-other-buffer (if the-other-window
                                (window-buffer (get-next-non-temp-buffer-window))
@@ -1584,10 +1585,20 @@ the current window only. TODO: use excursion,or transient?"
          (started-same (string= orig-cur-buffer-name other-buffer-name))
          (orig-point (point)))
     (apply func args)
-    (let ((ended-same (string= (buffer-file-name (current-buffer))
+    (let* ((cur-buffer (buffer-file-name (window-buffer)))
+           (ended-same (string= cur-buffer
                                other-buffer-name)))
-      (if (not (and started-same ended-same))
-          (if ended-same (cp/move-buffer-to-other-window))))))
+      (if (and ended-same (not started-same))  ;; if we ended same but didn't start same
+          (progn
+            (cp/move-buffer-to-other-window)
+            (select-window the-other-window))
+        (if (and started-same ended-same)
+            (progn
+              (select-window orig-window)
+              (switch-to-buffer orig-buffer)
+              (goto-char orig-point)
+              (select-window the-other-window))
+          )))))
 
 (defun cp/next-error ()
   "for some reaton, when we adive-add'ed compilation-goto-locus with :around cp/move-to-already-opened,
@@ -1596,8 +1607,8 @@ the current-buffer was nil. So use this wrapper.  This is bound to M-g M-n."
   (cp/move-to-already-opened-for-next-error #'next-error))
 
 
-;; Don't need it anymore, after cp/next-errror:
-;;(advice-add 'compilation-goto-locus :around #'cp/move-to-already-opened)
+;; Don't need it anymore, after cp/next-errror: -- nope, still need it?
+(advice-add 'compilation-goto-locus :around #'cp/move-to-already-opened)
 ;;
 ;; clean up during debugging:
 ;;(advice-remove 'compilation-goto-locus #'cp/move-to-already-opened)
@@ -1624,17 +1635,21 @@ the current-buffer was nil. So use this wrapper.  This is bound to M-g M-n."
         (recenter-top-bottom 24))))
 
 ;; turn off if it causes you to jump when you're looking at the destination
-(advice-add 'cp/go-to-def-or-ref :around 'cp/jump-recenter)
+;;(advice-add 'cp/go-to-def-or-ref :around 'cp/jump-recenter)
 (advice-add 'cp/go-to-def-or-ref :around 'cp/move-to-already-opened)
-(advice-add 'better-jumper-jump-backward :around 'cp/jump-recenter)
+;;(advice-add 'better-jumper-jump-backward :around 'cp/jump-recenter)
 
 ;;(advice-remove 'cp/go-to-def-or-ref 'cp/move-to-already-opened)
 ;;(advice-remove 'cp/go-to-def-or-ref 'cp/jump-recenter)
+;;(advice-remove 'better-jumper-jump-backward 'cp/jump-recenter)
 
 ;;
 ;; Do the same for consult-imenu
 ;;
-(advice-add 'consult-imenu :around 'cp/jump-recenter)
+;;(advice-add 'consult-imenu :around 'cp/jump-recenter)
+
+;; to remove:
+;;(advice-remove 'consult-imenu 'cp/jump-recenter)
 
 
 (map! :map prog-mode-map
@@ -1661,6 +1676,7 @@ the current-buffer was nil. So use this wrapper.  This is bound to M-g M-n."
       "<tab>"      #'cp/tab-dwim
       "M-i"        #'consult-imenu
       "C-M-S-L"    #'cp/align-brace-content
+      ;;"M-g M-n"    #'next-error
       "M-g M-n"    #'cp/next-error
       )
 
@@ -2109,6 +2125,8 @@ Return an event vector."
               (set-face-attribute 'org-block nil :background "#2A3339")
               (add-hook 'ediff-quit-hook 'cp/kill-ediff-buffers)
               ;;(remove-hook 'ediff-quit-hook 'cp/kill-ediff-buffers)
+              (after! ligature
+                (global-ligature-mode 0))
               (message "finished after init-setup")
               )
             ))

@@ -250,6 +250,53 @@
     '(([(boolean) (null)] @font-lock-constant-face))
    ))
 
+(defconst jai-ts-mode--defun-function-type-list
+  '("procedure_declaration"
+    "struct_declaration"
+    "enum_declaration"))
+
+(defun jai-ts-mode--narrow-to-defun ()
+  "Narrow to the function/method definition at point using treesit."
+  (let ((node (treesit-node-at (point))))
+    (when-let ((defun-node (treesit-parent-until
+                           node
+                           (lambda (n)
+                             (member (treesit-node-type n)
+                                    jai-ts-mode--defun-function-type-list)))))
+      (narrow-to-region (treesit-node-start defun-node)
+                       (treesit-node-end defun-node)))))
+
+(defun jai-ts-mode--beginning-of-defun ()
+  "Move to beginning of defun using treesit."
+  (when-let* ((node (treesit-node-at (point)))
+              (defun-node (treesit-parent-until
+                          node
+                          (lambda (n)
+                            (member (treesit-node-type n)
+                                   jai-ts-mode--defun-function-type-list)))))
+    (goto-char (treesit-node-start defun-node))))
+
+(defun jai-ts-mode--end-of-defun ()
+  "Move to end of defun using treesit."
+  (when-let* ((node (treesit-node-at (point)))
+              (defun-node (treesit-parent-until
+                          node
+                          (lambda (n)
+                            (member (treesit-node-type n)
+                                   jai-ts-mode--defun-function-type-list)))))
+    (goto-char (treesit-node-end defun-node))))
+
+(defun jai-ts-mode--get-defun-bounds ()
+  "Get bounds of defun using treesit."
+  (when-let* ((node (treesit-node-at (point)))
+              (defun-node (treesit-parent-until
+                          node
+                          (lambda (n)
+                            (member (treesit-node-type n)
+                                   jai-ts-mode--defun-function-type-list)))))
+    (cons (treesit-node-start defun-node)
+          (treesit-node-end defun-node))))
+
 ;;;###autoload
 (define-derived-mode jai-ts-mode prog-mode "jai"
   "Major mode for editing jai files, powered by tree-sitter."
@@ -273,6 +320,14 @@
     ;; this breaks which-fun:
     ;;(setq-local treesit-defun-name-function #'jai-ts-mode--defun-name)
     (setq-local treesit-defun-name-function nil)
+
+    (setq-local narrow-to-defun-function #'jai-ts-mode--narrow-to-defun)
+    (setq-local beginning-of-defun-function #'jai-ts-mode--beginning-of-defun)
+    (setq-local end-of-defun-function #'jai-ts-mode--end-of-defun)
+
+    ;; TODO: this overides other major modes? fixme. nocommit
+    (put 'defun 'bounds-of-thing-at-point 'jai-ts-mode--get-defun-bounds)
+    ;;(get 'defun 'bounds-of-thing-at-point) ;; maybe store the original and reput?
 
         ;; Imenu.
     (setq-local treesit-simple-imenu-settings
