@@ -318,6 +318,8 @@ if [[ $OSTYPE == linux* ]]; then
   export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
   . "$HOME/.atuin/bin/env"
 
+  export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0
+
   ## but not wsl:
   if ! grep -q "microsoft" /proc/version > /dev/null 2>&1; then
     xcape -t 300
@@ -340,7 +342,10 @@ fi
 ## Settings for both mac and linux
 ##
 
-export PATH="$HOME/.emacs.d/bin:$HOME/go/bin:$PATH"
+export GOROOT=/snap/go/current/
+unset GOPATH
+
+export PATH="$GOROOT/bin/go:$HOME/.emacs.d/bin:$HOME/go/bin:$PATH"
 export MYVIMRC=~/.config/nvim/init.lua
 export XDG_CONFIG_HOME="$HOME/.config"
 
@@ -353,6 +358,7 @@ alias cm='chezmoi'
 alias cmp='chezmoi git pull -- --autostash --rebase && chezmoi diff'
 alias s="kitten ssh"
 alias gts='gotestsum --format standard-verbose'
+alias python='python3'
 
 # so that ctrl-d doesn't close terminal
 set -o ignoreeof

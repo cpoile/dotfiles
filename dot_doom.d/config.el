@@ -31,7 +31,8 @@
 
 (if (string-equal system-type "gnu/linux")
     (progn
-      (setq doom-font (font-spec :family "JetBrains Mono" :size 21))))
+      (setq doom-font (font-spec :family "JetBrainsMono Nerd Font" :size 21 :weight 'regular)
+            nerd-icons-font-family "JetBrainsMono Nerd Font")))
 
 (if (string-equal system-type "windows-nt")
     (progn
@@ -1843,7 +1844,7 @@ Return an event vector."
 ;; Tree-sitter
 ;;
 ;; Should use:
-;;(mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
+;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
 ;; ;;at least once per installation or while changing this list
 ;; (setq treesit-language-source-alist
 ;;       '((bash "https://github.com/tree-sitter/tree-sitter-bash")
@@ -1939,13 +1940,22 @@ Return an event vector."
 ;;   (after! lsp-mode
 ;;     (add-hook 'go-mode-hook 'lsp)))
 
-(use-package go-mode
-  :mode ("\\.go\\'" . go-mode)
+(defun ime-go-before-save ()
+  (interactive)
+  (when lsp-mode
+    (lsp-organize-imports)
+    (lsp-format-buffer)))
+
+(use-package go-ts-mode
+  :mode ("\\.go\\'" . go-ts-mode)
   :init
   ;;(setq compilation-read-command nil)
   :bind (;; ("M-." . godef-jump)
-         ("C-." . +lookup/references))
-  :hook ((go-mode . lsp-deferred)))
+         ;;("C-." . +lookup/references))
+  :hook ((go-ts-mode . lsp-deferred)
+         (go-ts-mode . (lambda ()
+                         (add-hook 'before-save-hook 'ime-go-before-save))))))
+
 
 ;; ->
 ;; don't need this bc we're just not going to use treesit for now
@@ -1953,8 +1963,8 @@ Return an event vector."
 ;;(defun go-mode-run-hooks () (run-hooks 'go-mode-hook))
 ;;(add-hook 'go-ts-mode-hook #'go-mode-run-hooks)
 
-(after! go-ts-mode
-  (setq auto-mode-alist (delete '("\\.go\\'" . go-ts-mode) auto-mode-alist)))
+;; (after! go-ts-mode
+;;   (setq auto-mode-alist (delete '("\\.go\\'" . go-ts-mode) auto-mode-alist)))
 
 ;;
 ;; flash on copy
