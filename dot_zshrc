@@ -318,7 +318,11 @@ if [[ $OSTYPE == linux* ]]; then
   export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
   . "$HOME/.atuin/bin/env"
 
-  export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0
+  # for x410
+  #export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2; exit;}'):0.0
+
+  # for wsl2
+  export DISPLAY=:0
 
   ## but not wsl:
   if ! grep -q "microsoft" /proc/version > /dev/null 2>&1; then
@@ -336,6 +340,12 @@ if grep -q "microsoft" /proc/version > /dev/null 2>&1; then
     alias ec='emacsclient.exe -nw'
     export PATH="/snap/bin:$PATH"
     export GPG_TTY=$(tty)
+
+    # cursor size
+    # load any xresrouce settings on login:
+    if [ -e "$HOME/.Xresources" ]; then
+      xrdb -load "$HOME/.Xresources"
+    fi
 fi
 
 ##
@@ -377,3 +387,20 @@ export PATH="$PATH:/home/chris/.local/share/JetBrains/Toolbox/scripts"
 export NVM_DIR="$HOME/.config/nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# bun completions
+[ -s "/home/chris/.bun/_bun" ] && source "/home/chris/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+# elixir
+installs_dir=$HOME/.elixir-install/installs
+export PATH=$installs_dir/otp/27.1.2/bin:$PATH
+export PATH=$installs_dir/elixir/1.18.2-otp-27/bin:$PATH
+
+source /var/snap/openjdk/2020/openjdk.env
+
+autoload -U +X bashcompinit && bashcompinit
+complete -o nospace -C /home/chris/minio-binaries/mc mic

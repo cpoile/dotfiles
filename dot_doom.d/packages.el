@@ -84,3 +84,4 @@
 ;; (package! treemacs-magit)
 
 (package! expreg)
+(package! inf-elixir)

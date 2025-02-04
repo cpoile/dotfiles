@@ -31,12 +31,12 @@
 
 (if (string-equal system-type "gnu/linux")
     (progn
-      (setq doom-font (font-spec :family "JetBrainsMono Nerd Font" :size 21 :weight 'regular)
+      (setq doom-font (font-spec :family "JetBrainsMono Nerd Font" :size 20 :weight 'regular)
             nerd-icons-font-family "JetBrainsMono Nerd Font")))
 
 (if (string-equal system-type "windows-nt")
     (progn
-      (setq doom-font (font-spec :family "JetBrainsMono NF Regular" :size 21 :weight 'regular)
+      (setq doom-font (font-spec :family "JetBrainsMono NF Regular" :size 20 :weight 'regular)
             nerd-icons-font-family "JetBrainsMono NF Regular")
       ;;(setq doom-font (font-spec :family "Iosevka" :size 22 :weight 'normal))
       ;; Remember to run doom env from a windows cmd, not from mingw
@@ -282,8 +282,6 @@
                                   comment-end   "")
                             ;; (setq indent-tabs-mode nil)
                             ;; (setq indent-line-function 'relative-line-indent)
-                            (setq lsp-ui-doc-max-height 40)
-                            (setq lsp-ui-doc-max-width 150)
                             (lsp)
                             (lsp-completion-mode -1)
                             (setq-local
@@ -465,9 +463,8 @@
 (after! rust-mode
   (modify-syntax-entry ?_ "w" rust-mode-syntax-table))
 
-(after! lsp-ui-doc
-  (setq! lsp-ui-doc-max-height 40)
-  (setq! lsp-ui-doc-max-width 150))
+(setq! lsp-ui-doc-max-height 40)
+(setq! lsp-ui-doc-max-width 150)
 
 (setq! lsp-idle-delay 0.2)
 (setq! lsp-rust-analyzer-server-display-inlay-hints t)
@@ -624,6 +621,7 @@
                     (with-persp-buffer-list () (ibuffer arg))))
 
 (remove-hook 'c-mode-common-hook 'rainbow-delimiters-mode nil)
+(remove-hook 'rjsx-mode-hook 'rainbow-delimiters-mode nil)
 
 (after! c-ts-mode
   (add-hook 'c-ts-mode-hook 'lsp-deferred)
@@ -639,9 +637,62 @@
 ;;
 ;; LSP mode
 ;;
-
 (with-eval-after-load 'lsp-mode
-  (setq lsp-enable-symbol-highlighting nil))
+  (setq lsp-enable-symbol-highlighting t)
+  (setq lsp-modeline-code-actions-segments '(count icon name))
+  (add-to-list 'exec-path "/home/chris/git/elixir/elixir-ls")
+  (setq lsp-ui-doc-max-height 50)
+  (setq lsp-ui-doc-max-width 150))
+
+;; (use-package elixir-mode
+;;   :ensure t
+;;   :custom
+;;   (lsp-elixir-server-command '("/home/chris/git/elixir/elixir-ls/language-server.sh")))
+
+;; TODO: don't use use-package
+
+(use-package lsp-mode
+  :commands lsp
+  :ensure t
+  :diminish lsp-mode
+  :hook
+  (elixir-mode . lsp)
+  :init
+  (add-to-list 'exec-path "/home/chris/git/elixir/elixir-ls")
+  (setq lsp-ui-doc-max-height 40)
+  (setq lsp-ui-doc-max-width 150))
+
+
+(use-package
+ elixir-ts-mode
+ :hook (elixir-ts-mode . lsp-deferred)
+ (elixir-ts-mode
+  .
+  (lambda ()
+    (push '(">=" . ?\u2265) prettify-symbols-alist)
+    (push '("<=" . ?\u2264) prettify-symbols-alist)
+    (push '("!=" . ?\u2260) prettify-symbols-alist)
+    (push '("==" . ?\u2A75) prettify-symbols-alist)
+    (push '("=~" . ?\u2245) prettify-symbols-alist)
+    (push '("<-" . ?\u2190) prettify-symbols-alist)
+    (push '("->" . ?\u2192) prettify-symbols-alist)
+    (push '("<-" . ?\u2190) prettify-symbols-alist)
+    (push '("|>" . ?\u25B7) prettify-symbols-alist)))
+ (before-save . lsp-format-buffer))
+
+(map! :after elixir-ts-mode
+      :map elixir-ts-mode-map
+      "C-x C-e" #'inf-elixir-send-region)
+
+(use-package inf-elixir
+  :bind (("C-c i i" . 'inf-elixir)
+         ("C-c i p" . 'inf-elixir-project)
+         ("C-c i l" . 'inf-elixir-send-line)
+         ("C-c i r" . 'inf-elixir-send-region)
+         ("C-c i b" . 'inf-elixir-send-buffer)
+         ("C-c i R" . 'inf-elixir-reload-module)))
+
+;;(require 'smartparens-config)
 
 ;;
 ;; Find clangd
@@ -979,6 +1030,24 @@ there's a region, all lines that region covers will be duplicated."
   (interactive)
   (delete-indentation 1))
 
+;; Duplicate region and comment out previous version
+(defun cp/duplicate-and-comment (arg)
+    "Duplicates the current line or region ARG times. Then comments out original.
+If there's no region, the current line will be duplicated.  However, if
+there's a region, all lines that region covers will be duplicated."
+  (interactive "p")
+  (pcase-let* ((origin (point))
+               (`(,beg . ,end) (crux-get-positions-of-line-or-region))
+               (region (buffer-substring-no-properties beg end))
+               (orig-end end))
+    (dotimes (_i arg)
+      (goto-char end)
+      (newline)
+      (insert region)
+      (setq end (point)))
+    (smart-comment-region beg orig-end nil)
+    (goto-char (+ origin (* (length region) arg) arg))))
+
 ;;
 ;; Customize for writing, and org-mode
 ;;
@@ -1311,7 +1380,8 @@ going through children."
       (treemacs-create-icon :icon "- " :extensions (dir-open) :fallback 'same-as-icon)
       (treemacs-create-icon :icon "+ " :extensions (dir-closed) :fallback 'same-as-icon)
       (treemacs-create-icon :icon "  " :extensions (fallback) :fallback 'same-as-icon)))
-  (treemacs-load-theme "simple"))
+  ;(treemacs-load-theme "simple")
+  )
 
 (use-package treemacs
   :ensure t
@@ -1319,9 +1389,9 @@ going through children."
   :config
   (progn
     (setq treemacs-text-scale    0
-          treemacs-width         20
+          treemacs-width         26
           treemacs-no-png-images t )
-    (treemacs-resize-icons 18))
+    (treemacs-resize-icons 16))
     :bind
   (:map global-map
         ;("M-0"       . treemacs-select-window)
@@ -1679,6 +1749,8 @@ the current-buffer was nil. So use this wrapper.  This is bound to M-g M-n."
       "C-M-S-L"    #'cp/align-brace-content
       ;;"M-g M-n"    #'next-error
       "M-g M-n"    #'cp/next-error
+      "C-M-l"      #'lsp-format-buffer
+      "C-c D"      #'cp/duplicate-and-comment
       )
 
 
@@ -1865,14 +1937,23 @@ Return an event vector."
 ;;         (c "https://github.com/tree-sitter/tree-sitter-c")
 ;;         (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
 ;;         (rust "https://github.com/tree-sitter/tree-sitter-rust")
-;;         (odin "https://github.com/ap29600/tree-sitter-odin")))
+;;         (odin "https://github.com/ap29600/tree-sitter-odin")
+;;         (heex "https://github.com/phoenixframework/tree-sitter-heex")
+;;         (css "https://github.com/tree-sitter/tree-sitter-css")
+;;         (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+;;         (yaml "https://github.com/ikatyang/tree-sitter-yaml")
+;;         (elixir "https://github.com/elixir-lang/tree-sitter-elixir")
+;;         (html "https://github.com/tree-sitter/tree-sitter-html")
+;;         (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+;;         (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")))
 
 ;; to install for c and c++, go only:
 ;;
 ;; (setq treesit-language-source-alist
 ;;       '((c "https://github.com/tree-sitter/tree-sitter-c")
 ;;         (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
-;;         (go "https://github.com/tree-sitter/tree-sitter-go")))
+;;         (go "https://github.com/tree-sitter/tree-sitter-go")
+;;         (gomod "https://github.com/camdencheek/tree-sitter-go-mod")))
 ;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
 
 ;; to install for jai:
@@ -1886,12 +1967,26 @@ Return an event vector."
 ;;       '((odin "https://github.com/tree-sitter-grammars/tree-sitter-odin")))
 ;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
 
+;; to install for web & elixir:
+;; (setq treesit-language-source-alist
+;;       '((elixir "https://github.com/elixir-lang/tree-sitter-elixir")
+;;         (html "https://github.com/tree-sitter/tree-sitter-html")
+;;         (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+;;         (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+;;         (css "https://github.com/tree-sitter/tree-sitter-css")
+;;         (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+;;         (yaml "https://github.com/ikatyang/tree-sitter-yaml")
+;;         (heex "https://github.com/phoenixframework/tree-sitter-heex")))
+;; (mapc #'treesit-install-language-grammar (mapcar #'car treesit-language-source-alist))
+
 (add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
 (add-to-list 'major-mode-remap-alist '(c++-mode . c++-ts-mode))
 (add-to-list 'major-mode-remap-alist '(c-or-c++-mode . c-or-c++-ts-mode))
 (add-to-list 'major-mode-remap-alist '(odin-mode . odin-ts-mode))
 (add-to-list 'major-mode-remap-alist '(go-mode . go-ts-mode))
 (add-to-list 'major-mode-remap-alist '(jai-mode . jai-ts-mode))  ;; jai-ts-mode does this already?
+(add-to-list 'major-mode-remap-alist '(typescript-mode . typescript-ts-mode))  ;; jai-ts-mode does this already?
+(add-to-list 'major-mode-remap-alist '(elixir-mode . elixir-ts-mode))
 
  ;; (major-mode-remap-alist
  ;;  '((elixir-mode . elixir-ts-mode)))
@@ -1946,15 +2041,15 @@ Return an event vector."
     (lsp-organize-imports)
     (lsp-format-buffer)))
 
-(use-package go-ts-mode
-  :mode ("\\.go\\'" . go-ts-mode)
-  :init
-  ;;(setq compilation-read-command nil)
-  :bind (;; ("M-." . godef-jump)
-         ;;("C-." . +lookup/references))
-  :hook ((go-ts-mode . lsp-deferred)
-         (go-ts-mode . (lambda ()
-                         (add-hook 'before-save-hook 'ime-go-before-save))))))
+;; (use-package go-ts-mode
+;;   :mode ("\\.go\\'" . go-ts-mode)
+;;   :init
+;;   ;;(setq compilation-read-command nil)
+;;   :bind (;; ("M-." . godef-jump)
+;;          ;;("C-." . +lookup/references))
+;;   :hook ((go-ts-mode . lsp-deferred)
+;;          (go-ts-mode . (lambda ()
+;;                          (add-hook 'before-save-hook 'ime-go-before-save))))))
 
 
 ;; ->
