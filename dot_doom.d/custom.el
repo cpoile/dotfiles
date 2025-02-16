@@ -6,14 +6,24 @@
  '(ediff-current-diff-A ((t (:extend t :background "#3f575a"))))
  '(ediff-current-diff-B ((t (:inherit ediff-current-diff-A :background "#304946"))))
  '(ediff-even-diff-B ((t (:inherit ediff-even-diff-A :background "#2e4542"))))
- '(ediff-fine-diff-A ((t (:extend t :background "#304946" :weight bold)))))
+ '(ediff-fine-diff-A ((t (:extend t :background "#304946" :weight bold))))
+ '(next-error-message ((t (:extend t)))))
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(safe-local-variable-values
-   '((default-compile-cmd
+   '((compilation-search-path "~/git/elixir/in_action/")
+     (compilation-search-path "/home/chris/git/elixir/in_action/test/todo/")
+     (compilation-search-path "/home/chris/git/elixir/in_action/test")
+     (compilation-search-path "/home/chris/git/elixir/in_action")
+     (compilation-search-path "/home/chris/git/elixir/in_action/")
+     (custom-run-test-cmd . "/home/chris/git/elixir/in_action/run_tests.sh")
+     (custom-run-test-cmd
+      . "/home/chris/git/elixir/in_action/run_in_pwd.sh mix test")
+     (custom-run-test-cmd . "/home/chris/git/elixir/in_action/mix test")
+     (default-compile-cmd
       . "jai c:/Users/Chris/git/jai/handmade_jai/build_handmade.jai")
      (defualt-compile-cmd
       . "jai c:/Users/Chris/git/jai/handmade_jai/build_handmade.jai")
@@ -50,3 +60,4 @@
      (custom-compile-cmd
       . "c:/Users/Chris/git/jai/writing-an-interpreter/make.bat")
      (mangle-whitespace . t))))
+(put 'projectile-ripgrep 'disabled nil)

@@ -435,6 +435,7 @@
    git-commit-summary-max-length 68
    magit-ediff-dwim-show-on-hunks t
    magit-diff-hide-trailing-cr-characters t
+   magit-list-refs-sortby "-creatordate"
    ))
 ;; (use-package magit-delta
 ;;   :hook (magit-mode . magit-delta-mode))
@@ -463,19 +464,19 @@
 (after! rust-mode
   (modify-syntax-entry ?_ "w" rust-mode-syntax-table))
 
-(setq! lsp-ui-doc-max-height 40)
-(setq! lsp-ui-doc-max-width 150)
-
-(setq! lsp-idle-delay 0.2)
-(setq! lsp-rust-analyzer-server-display-inlay-hints t)
-(setq! lsp-rust-analyzer-display-chaining-hints t)
-(setq! lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
-(setq! lsp-rust-analyzer-display-closure-return-type-hints t)
-(setq! lsp-rust-analyzer-display-parameter-hints nil)
-(setq! lsp-rust-analyzer-display-reborrow-hints nil)
-(setq! lsp-eldoc-render-all nil)
-(setq! eldoc-idle-delay 0.2)
-(setq! lsp-signature-auto-activate)
+(after! lsp-mode
+  (setq! lsp-ui-doc-max-height 40)
+  (setq! lsp-ui-doc-max-width 150)
+  (setq! lsp-idle-delay 0.2)
+  (setq! lsp-rust-analyzer-server-display-inlay-hints t)
+  (setq! lsp-rust-analyzer-display-chaining-hints t)
+  (setq! lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
+  (setq! lsp-rust-analyzer-display-closure-return-type-hints t)
+  (setq! lsp-rust-analyzer-display-parameter-hints nil)
+  (setq! lsp-rust-analyzer-display-reborrow-hints nil)
+  (setq! lsp-eldoc-render-all nil)
+  (setq! eldoc-idle-delay 0.2)
+  (setq! lsp-signature-auto-activate))
 
 ;;;
 ;;; lsp-mode with Tramp doesn't seem to work:
@@ -659,26 +660,32 @@
   (elixir-mode . lsp)
   :init
   (add-to-list 'exec-path "/home/chris/git/elixir/elixir-ls")
-  (setq lsp-ui-doc-max-height 40)
-  (setq lsp-ui-doc-max-width 150))
-
+  (setq lsp-ui-doc-max-height 50)
+  (setq lsp-ui-doc-max-width 150)
+  (setq lsp-lens-enable nil))
 
 (use-package
- elixir-ts-mode
- :hook (elixir-ts-mode . lsp-deferred)
- (elixir-ts-mode
-  .
-  (lambda ()
-    (push '(">=" . ?\u2265) prettify-symbols-alist)
-    (push '("<=" . ?\u2264) prettify-symbols-alist)
-    (push '("!=" . ?\u2260) prettify-symbols-alist)
-    (push '("==" . ?\u2A75) prettify-symbols-alist)
-    (push '("=~" . ?\u2245) prettify-symbols-alist)
-    (push '("<-" . ?\u2190) prettify-symbols-alist)
-    (push '("->" . ?\u2192) prettify-symbols-alist)
-    (push '("<-" . ?\u2190) prettify-symbols-alist)
-    (push '("|>" . ?\u25B7) prettify-symbols-alist)))
- (before-save . lsp-format-buffer))
+  elixir-ts-mode
+  :hook (elixir-ts-mode . lsp-deferred)
+  (elixir-ts-mode
+   .
+   (lambda ()
+     (push '(">=" . ?\u2265) prettify-symbols-alist)
+     (push '("<=" . ?\u2264) prettify-symbols-alist)
+     (push '("!=" . ?\u2260) prettify-symbols-alist)
+     (push '("==" . ?\u2A75) prettify-symbols-alist)
+     (push '("=~" . ?\u2245) prettify-symbols-alist)
+     (push '("<-" . ?\u2190) prettify-symbols-alist)
+     (push '("->" . ?\u2192) prettify-symbols-alist)
+     (push '("<-" . ?\u2190) prettify-symbols-alist)
+     (push '("|>" . ?\u25B7) prettify-symbols-alist)
+     (modify-syntax-entry ?_ "w" elixir-ts--syntax-table)
+     (setq lsp-ui-doc-max-height 50)
+     (setq lsp-ui-doc-max-width 150)))
+  (before-save . lsp-format-buffer))
+
+; (remove-hook 'elixir-ts-mode-hook (car elixir-ts-mode-hook))
+
 
 (map! :after elixir-ts-mode
       :map elixir-ts-mode-map
@@ -691,6 +698,9 @@
          ("C-c i r" . 'inf-elixir-send-region)
          ("C-c i b" . 'inf-elixir-send-buffer)
          ("C-c i R" . 'inf-elixir-reload-module)))
+
+;;
+(setq compilation-search-path '("~/git/elixir/in_action"))
 
 ;;(require 'smartparens-config)
 
@@ -918,11 +928,14 @@ current buffer's, reload dir-locals."
 
 (defun cp/go-to-def-or-ref ()
   (interactive)
-  (let ((cur (line-number-at-pos)))
+  (let ((cur (line-number-at-pos))
+        (cur-pt (point)))
     (if (= cur (progn
                  (call-interactively '+lookup/definition)
                  (line-number-at-pos)))
-        (call-interactively '+lookup/references))))
+        (progn
+          (goto-char cur-pt)
+          (call-interactively '+lookup/references)))))
 
 (defun cp/tab-dwim ()
   "Call dabbrev-expand if point is within a word,
@@ -1370,18 +1383,18 @@ going through children."
 ;;   :ensure t)
 
 
-(after! treemacs
-  (map! :map global-map "s-1" #'treemacs)
-  (treemacs-create-theme "simple"
-    :config
-    (progn
-      (treemacs-create-icon :icon "- " :extensions (root-open) :fallback 'same-as-icon)
-      (treemacs-create-icon :icon "+ " :extensions (root-closed) :fallback 'same-as-icon)
-      (treemacs-create-icon :icon "- " :extensions (dir-open) :fallback 'same-as-icon)
-      (treemacs-create-icon :icon "+ " :extensions (dir-closed) :fallback 'same-as-icon)
-      (treemacs-create-icon :icon "  " :extensions (fallback) :fallback 'same-as-icon)))
-  ;(treemacs-load-theme "simple")
-  )
+;; (after! treemacs
+;;   (map! :map global-map "s-1" #'treemacs)
+;;   (treemacs-create-theme "simple"
+;;     :config
+;;     (progn
+;;       (treemacs-create-icon :icon "- " :extensions (root-open) :fallback 'same-as-icon)
+;;       (treemacs-create-icon :icon "+ " :extensions (root-closed) :fallback 'same-as-icon)
+;;       (treemacs-create-icon :icon "- " :extensions (dir-open) :fallback 'same-as-icon)
+;;       (treemacs-create-icon :icon "+ " :extensions (dir-closed) :fallback 'same-as-icon)
+;;       (treemacs-create-icon :icon "  " :extensions (fallback) :fallback 'same-as-icon)))
+;;   ;(treemacs-load-theme "simple")
+;;   )
 
 (use-package treemacs
   :ensure t
@@ -1391,7 +1404,9 @@ going through children."
     (setq treemacs-text-scale    0
           treemacs-width         26
           treemacs-no-png-images t )
-    (treemacs-resize-icons 16))
+    (treemacs-resize-icons 16)
+    (treemacs-follow-mode t)
+    (treemacs-project-follow-mode t))
     :bind
   (:map global-map
         ;("M-0"       . treemacs-select-window)
@@ -1402,6 +1417,10 @@ going through children."
         ;("C-x t C-t" . treemacs-find-file)
         ;("C-x t M-t" . treemacs-find-tag)
         ))
+
+(use-package treemacs-projectile
+  :after (treemacs projectile)
+  :ensure t)
 
 ;;
 ;; Keybindings
@@ -1414,6 +1433,10 @@ going through children."
 (map! "C-c <left>" #'windmove-swap-states-left)
 (map! "C-c <up>" #'windmove-swap-states-up)
 (map! "C-c <down>" #'windmove-swap-states-down)
+(map! "S-<right>" #'windmove-right)
+(map! "S-<left>" #'windmove-left)
+(map! "S-<up>" #'windmove-up)
+(map! "S-<down>" #'windmove-down)
 
 (map! :map text-mode-map "C-M-p" #'cp/backward-paragraph)
 (map! :map text-mode-map "M-p" #'cp/backward-paragraph)
@@ -1723,6 +1746,18 @@ the current-buffer was nil. So use this wrapper.  This is bound to M-g M-n."
 ;;(advice-remove 'consult-imenu 'cp/jump-recenter)
 
 
+(defun cp/transpose-words-with-symbols ()
+  "Transpose words including leading symbols."
+  (interactive)
+  (let ((syntax-table (make-syntax-table (syntax-table))))
+    (modify-syntax-entry ?& "w" syntax-table)
+    ;; Add other symbols here if needed
+    (with-syntax-table syntax-table
+      (transpose-words 1))))
+
+;; Bind it to M-t if you want to replace the default behavior
+(global-set-key (kbd "M-t") 'transpose-words-with-symbols)
+
 (map! :map prog-mode-map
       "C-c C-c"    #'compile
       "C-c C-r"    #'cp/compile
@@ -1751,6 +1786,7 @@ the current-buffer was nil. So use this wrapper.  This is bound to M-g M-n."
       "M-g M-n"    #'cp/next-error
       "C-M-l"      #'lsp-format-buffer
       "C-c D"      #'cp/duplicate-and-comment
+      "M-t"        #'cp/transpose-words-with-symbols
       )
 
 
@@ -2103,7 +2139,7 @@ Return an event vector."
   (interactive)
   (ansi-color-apply-on-region (point-min) (point-max)))
 
-;(add-hook 'compilation-filter-hook 'ansi-color-compilation-filter) ;; doesn't work?
+(add-hook 'compilation-filter-hook 'ansi-color-compilation-filter) ;; doesn't work?
 
 ;(setq compilation-max-output-line-length nil)
 
@@ -2132,6 +2168,9 @@ Return an event vector."
 ;; ediff region with clipboard
 ;;
 
+(defvar cp/ediff-bufA)
+(defvar cp/ediff-bufB)
+
 (defun cp/ediff-region-with-clipboard ()
   "Compare the selected region with the contents of the system clipboard using ediff."
   (interactive)
@@ -2139,31 +2178,25 @@ Return an event vector."
     (error "No region selected"))
 
   (let* ((region-text (buffer-substring-no-properties (region-beginning) (region-end)))
-         (clipboard-text (current-kill 0))
-         (buf1 (generate-new-buffer "*Region*"))
-         (buf2 (generate-new-buffer "*Clipboard*")))
+         (clipboard-text (current-kill 0)))
 
-    (with-current-buffer buf1
+    (setq cp/ediff-bufA (generate-new-buffer "*Region*"))
+    (setq cp/ediff-bufB (generate-new-buffer "*Clipboard*"))
+
+    (with-current-buffer cp/ediff-bufA
       (insert region-text)
       (visual-line-mode 1))
 
-    (with-current-buffer buf2
+    (with-current-buffer cp/ediff-bufB
       (insert clipboard-text)
       (visual-line-mode 1))
 
-    (ediff-buffers buf1 buf2)))
+    (ediff-buffers cp/ediff-bufA cp/ediff-bufB)))
+
 
 (defun cp/kill-ediff-buffers ()
-  (let ((bufA (buffer-name ediff-buffer-A))
-        (bufB (buffer-name ediff-buffer-B))
-        (bufC (buffer-name ediff-buffer-C))
-        (reg "^\\*.*\\*$"))
-    (if (string-match reg bufA)
-        (kill-buffer ediff-buffer-A))
-    (if (string-match reg bufB)
-        (kill-buffer ediff-buffer-B))
-    (if (string-match reg bufC)
-        (kill-buffer ediff-buffer-C))))
+  (kill-buffer cp/ediff-bufA)
+  (kill-buffer cp/ediff-bufB))
 
 ;; adding the hook after init, so that it's last. See at the end of this file.
 
@@ -2228,6 +2261,7 @@ Return an event vector."
               (add-to-list 'display-buffer-alist
                            (cons "\\*Async Shell Command\\*.*" (cons #'display-buffer-no-window nil)))
               (set-face-attribute 'org-block nil :background "#2A3339")
+              (set-face-attribute 'ansi-color-black nil :foreground "#656661")
               (add-hook 'ediff-quit-hook 'cp/kill-ediff-buffers)
               ;;(remove-hook 'ediff-quit-hook 'cp/kill-ediff-buffers)
               (after! ligature
