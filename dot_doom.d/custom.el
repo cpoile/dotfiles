@@ -10,7 +10,10 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(safe-local-variable-values
-   '((custom-run-test-cmd
-      . "/home/chris/git/elixir/codecrafters-redis-elixir/run_tests.sh")
-     (custom-run-test-cmd . "/home/chris/git/elixir/in_action/run_tests.sh"))))
+   '((file-to-compile-cmd
+      ("win32_handmade.jai" compile "jai c:/Users/Chris/git/jai/handmade_jai/build_win32_handmade.jai"))
+     (custom-run-test-cmd . "c:/Users/Chris/git/jai/handmade_jai/build/handmade.exe test")
+     (custom-run-all-cmd . "c:/Users/Chris/git/jai/handmade_jai/build/handmade.exe")
+     (defualt-compile-cmd . "jai c:/Users/Chris/git/jai/handmade_jai/build_handmade.jai")
+     (compile-all-cmd . "c:/Users/Chris/git/jai/handmade_jai/make.bat"))))
 (put 'projectile-ripgrep 'disabled nil)

@@ -343,6 +343,8 @@ if grep -q "microsoft" /proc/version > /dev/null 2>&1; then
     export PATH="/snap/bin:$PATH"
     export GPG_TTY=$(tty)
 
+    source /var/snap/openjdk/2020/openjdk.env
+
     # cursor size
     # load any xresrouce settings on login:
     if [ -e "$HOME/.Xresources" ]; then
@@ -403,8 +405,6 @@ installs_dir=$HOME/.elixir-install/installs
 export PATH=$installs_dir/otp/27.1.2/bin:$PATH
 export PATH=$installs_dir/elixir/1.18.2-otp-27/bin:$PATH
 export ERL_AFLAGS="-kernel shell_history enabled"
-
-source /var/snap/openjdk/2020/openjdk.env
 
 autoload -U +X bashcompinit && bashcompinit
 complete -o nospace -C /home/chris/minio-binaries/mc mic
