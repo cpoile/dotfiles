@@ -325,7 +325,7 @@ if [[ $OSTYPE == linux* ]]; then
   export DISPLAY=:0
 
   bindkey -r '^T'
-  
+
   ## but not wsl:
   if ! grep -q "microsoft" /proc/version > /dev/null 2>&1; then
     xcape -t 300
@@ -358,6 +358,7 @@ export GOROOT=/snap/go/current/
 unset GOPATH
 
 export PATH="$GOROOT/bin/go:$HOME/.emacs.d/bin:$HOME/go/bin:$PATH"
+export PATH="$HOME/.emacs.d/bin:$HOME/go/bin:$PATH"
 export MYVIMRC=~/.config/nvim/init.lua
 export XDG_CONFIG_HOME="$HOME/.config"
 
